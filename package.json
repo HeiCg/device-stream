@@ -1,0 +1,46 @@
+{
+  "name": "device-stream",
+  "version": "1.0.0",
+  "description": "Modular npm packages for mobile device video streaming - iOS simulators, iOS physical devices, and Android devices",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "build:core": "npm run build -w @device-stream/core",
+    "build:ios-simulator": "npm run build -w @device-stream/ios-simulator",
+    "build:ios-device": "npm run build -w @device-stream/ios-device",
+    "build:android": "npm run build -w @device-stream/android",
+    "build:mirrorkit": "bash scripts/build-mirrorkit.sh",
+    "clean": "npm run clean --workspaces",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HeiCg/device-stream.git"
+  },
+  "keywords": [
+    "mobile",
+    "streaming",
+    "ios",
+    "android",
+    "simulator",
+    "emulator",
+    "screen-mirroring",
+    "scrcpy",
+    "mirrorkit"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

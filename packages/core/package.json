@@ -1,0 +1,44 @@
+{
+  "name": "@device-stream/core",
+  "version": "1.0.0",
+  "description": "Core types, interfaces, and base classes for device streaming",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HeiCg/device-stream.git",
+    "directory": "packages/core"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "device-stream",
+    "types",
+    "interfaces"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "ws": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "name": "@device-stream/ios-simulator",
+  "version": "1.0.0",
+  "description": "iOS Simulator streaming via MirrorKit + polling fallback",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HeiCg/device-stream.git",
+    "directory": "packages/ios-simulator"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "device-stream",
+    "ios",
+    "simulator",
+    "mirrorkit",
+    "screen-mirroring",
+    "xcode"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@device-stream/core": "^1.0.0",
+    "appium-ios-simulator": "^6.1.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "ws": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": [
+    "darwin"
+  ]
+}
