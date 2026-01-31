@@ -400,6 +400,158 @@ export class IOSSimulatorManager extends EventEmitter {
     }
   }
 
+  /**
+   * Uninstall an app from the simulator
+   */
+  async uninstallApp(deviceId: string, bundleId: string): Promise<boolean> {
+    try {
+      const sim = await this.getSimulatorInstance(deviceId);
+      await sim.removeApp(bundleId);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // ==================== PERMISSIONS ====================
+
+  /**
+   * Set app permission
+   * @param permission - e.g., 'calendar', 'camera', 'contacts', 'location', 'microphone', 'photos', etc.
+   * @param value - 'yes', 'no', 'unset'
+   */
+  async setAppPermission(deviceId: string, bundleId: string, permission: string, value: 'yes' | 'no' | 'unset'): Promise<void> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    await sim.setPermission(bundleId, permission, value);
+  }
+
+  /**
+   * Set multiple app permissions at once
+   */
+  async setAppPermissions(deviceId: string, bundleId: string, permissions: Record<string, 'yes' | 'no' | 'unset'>): Promise<void> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    await sim.setPermissions(bundleId, permissions);
+  }
+
+  /**
+   * Get app permission value
+   */
+  async getAppPermission(deviceId: string, bundleId: string, permission: string): Promise<string> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    return await sim.getPermission(bundleId, permission);
+  }
+
+  // ==================== BIOMETRICS ====================
+
+  /**
+   * Enroll or unenroll biometric (Face ID / Touch ID)
+   */
+  async setBiometricEnrolled(deviceId: string, enrolled: boolean): Promise<void> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    await sim.enrollBiometric(enrolled);
+  }
+
+  /**
+   * Check if biometric is enrolled
+   */
+  async isBiometricEnrolled(deviceId: string): Promise<boolean> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    return await sim.isBiometricEnrolled();
+  }
+
+  /**
+   * Send biometric match/non-match
+   * @param shouldMatch - true for successful auth, false for failure
+   * @param biometricName - 'touchId' or 'faceId'
+   */
+  async sendBiometricMatch(deviceId: string, shouldMatch: boolean, biometricName: 'touchId' | 'faceId' = 'faceId'): Promise<void> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    await sim.sendBiometricMatch(shouldMatch, biometricName);
+  }
+
+  // ==================== SYSTEM SETTINGS ====================
+
+  /**
+   * Set device geolocation
+   */
+  async setGeolocation(deviceId: string, latitude: number, longitude: number): Promise<void> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    await sim.setGeolocation(latitude, longitude);
+  }
+
+  /**
+   * Set device appearance (light/dark mode)
+   */
+  async setAppearance(deviceId: string, mode: 'light' | 'dark'): Promise<void> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    await sim.setAppearance(mode);
+  }
+
+  /**
+   * Get current appearance
+   */
+  async getAppearance(deviceId: string): Promise<string> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    return await sim.getAppearance();
+  }
+
+  /**
+   * Configure localization (language, locale, keyboard)
+   */
+  async configureLocalization(deviceId: string, options: {
+    language?: { name: string };
+    locale?: { name: string; calendar?: string };
+    keyboard?: { name: string; layout: string };
+  }): Promise<void> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    await sim.configureLocalization(options);
+  }
+
+  // ==================== UTILITIES ====================
+
+  /**
+   * Send push notification to the simulator
+   */
+  async pushNotification(deviceId: string, bundleId: string, payload: Record<string, unknown>): Promise<void> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    await sim.pushNotification({
+      ...payload,
+      'Simulator Target Bundle': bundleId,
+    });
+  }
+
+  /**
+   * Shake the device (triggers shake gesture)
+   */
+  async shake(deviceId: string): Promise<void> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    await sim.shake();
+  }
+
+  /**
+   * Clear keychains
+   */
+  async clearKeychains(deviceId: string): Promise<void> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    await sim.clearKeychains();
+  }
+
+  /**
+   * Open URL in simulator (Safari or deep link)
+   */
+  async openUrl(deviceId: string, url: string): Promise<void> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    await sim.openUrl(url);
+  }
+
+  /**
+   * Get list of running processes on simulator
+   */
+  async getRunningProcesses(deviceId: string): Promise<Array<{ pid: number; name: string; group: string | null }>> {
+    const sim = await this.getSimulatorInstance(deviceId);
+    return await sim.ps();
+  }
+
   // ==================== MIRRORKIT STREAMING ====================
 
   /**

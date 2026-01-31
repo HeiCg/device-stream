@@ -134,3 +134,63 @@ export interface StreamResult {
   success: boolean;
   error?: string;
 }
+
+/**
+ * Device farm configuration
+ */
+export interface DeviceFarmConfig {
+  maxAndroidDevices: number;
+  maxIOSDevices: number;
+  androidDefaults: {
+    deviceType: string;
+    systemImage: string;
+  };
+  iosDefaults: {
+    deviceType: string;
+    runtime: string;
+  };
+  bootTimeout: number;
+  idleTimeout: number;
+}
+
+/**
+ * Device farm statistics
+ */
+export interface DeviceFarmStats {
+  totalDevices: number;
+  androidDevices: {
+    total: number;
+    ready: number;
+    busy: number;
+  };
+  iosDevices: {
+    total: number;
+    ready: number;
+    busy: number;
+  };
+  queueLength: number;
+}
+
+/**
+ * Queued task waiting for a device
+ */
+export interface QueuedTask {
+  id: string;
+  platform: DevicePlatform;
+  resolve: (device: FarmDevice) => void;
+  reject: (error: Error) => void;
+  createdAt: number;
+}
+
+/**
+ * Events emitted by the device farm
+ */
+export type DeviceFarmEvent =
+  | { type: 'device:created'; device: FarmDevice }
+  | { type: 'device:ready'; device: FarmDevice }
+  | { type: 'device:busy'; device: FarmDevice; taskId: string }
+  | { type: 'device:released'; device: FarmDevice }
+  | { type: 'device:stopped'; device: FarmDevice }
+  | { type: 'device:error'; device: FarmDevice; error: string }
+  | { type: 'queue:added'; taskId: string; platform: DevicePlatform }
+  | { type: 'queue:fulfilled'; taskId: string; deviceId: string };
