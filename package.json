@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
+    "build": "npm run build -w @device-stream/core && npm run build -w @device-stream/ios-simulator -w @device-stream/ios-device -w @device-stream/android",
     "build:core": "npm run build -w @device-stream/core",
     "build:ios-simulator": "npm run build -w @device-stream/ios-simulator",
     "build:ios-device": "npm run build -w @device-stream/ios-device",
