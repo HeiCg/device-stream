@@ -18,6 +18,10 @@ export {
   CreateDeviceOptions,
   InstallAppResult,
   StreamResult,
+  DeviceFarmConfig,
+  DeviceFarmStats,
+  QueuedTask,
+  DeviceFarmEvent,
 } from './types';
 
 // Interfaces
