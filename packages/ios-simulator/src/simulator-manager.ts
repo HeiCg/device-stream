@@ -8,8 +8,6 @@ import type { Simulator } from 'appium-ios-simulator';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { EventEmitter } from 'events';
-import * as path from 'path';
-import * as fs from 'fs/promises';
 import {
   FarmDevice,
   DeviceStatus,
@@ -17,6 +15,7 @@ import {
   InstallAppResult,
   StreamResult,
 } from '@device-stream/core';
+import { CaptureService } from './capture-service';
 
 const execAsync = promisify(exec);
 
@@ -37,22 +36,19 @@ interface SimctlRuntime {
 
 export interface IOSSimulatorManagerOptions {
   bootTimeout?: number;
-  mirrorKitAppPath?: string;
-  mirrorKitBundleId?: string;
+  captureService?: CaptureService;
 }
 
 export class IOSSimulatorManager extends EventEmitter {
   private devices: Map<string, FarmDevice> = new Map();
   private simulators: Map<string, Simulator> = new Map();
   private bootTimeout: number;
-  private mirrorKitAppPath: string;
-  private mirrorKitBundleId: string;
+  private captureService: CaptureService | null;
 
   constructor(options: IOSSimulatorManagerOptions = {}) {
     super();
     this.bootTimeout = options.bootTimeout ?? 120000;
-    this.mirrorKitBundleId = options.mirrorKitBundleId ?? 'com.devicestream.mirrorkit';
-    this.mirrorKitAppPath = options.mirrorKitAppPath ?? path.resolve(__dirname, '../../mirrorkit/build/Release-iphonesimulator/MirrorKit.app');
+    this.captureService = options.captureService ?? null;
   }
 
   /**
@@ -552,116 +548,40 @@ export class IOSSimulatorManager extends EventEmitter {
     return await sim.ps();
   }
 
-  // ==================== MIRRORKIT STREAMING ====================
+  // ==================== STREAMING (ScreenCaptureKit only) ====================
 
   /**
-   * Install MirrorKit app on the simulator
+   * Start streaming from simulator via ScreenCaptureKit (sim-capture binary).
    */
-  async installMirrorKit(deviceId: string): Promise<InstallAppResult> {
-    const appPath = this.mirrorKitAppPath;
-
-    // Check if app exists
-    try {
-      await fs.access(appPath);
-    } catch {
-      return {
-        success: false,
-        error: `MirrorKit app not found at ${appPath}. Run 'npm run build:mirrorkit' first.`
-      };
-    }
-
-    // Check if already installed
-    const isInstalled = await this.isAppInstalled(deviceId, this.mirrorKitBundleId);
-    if (isInstalled) {
-      console.log(`[MirrorKit] Already installed on ${deviceId}`);
-      return { success: true, bundleId: this.mirrorKitBundleId };
-    }
-
-    console.log(`[MirrorKit] Installing on ${deviceId}...`);
-    return await this.installApp(deviceId, appPath);
-  }
-
-  /**
-   * Launch MirrorKit app on the simulator with server URL
-   */
-  async launchMirrorKit(
-    deviceId: string,
-    serverHost: string = 'localhost',
-    serverPort: number = 5001
-  ): Promise<boolean> {
-    // Build server URL
-    const serverUrl = `ws://${serverHost}:${serverPort}/ws/mirror/device?deviceId=${deviceId}`;
-
-    console.log(`[MirrorKit] Launching on ${deviceId} with server ${serverUrl}`);
-
-    try {
-      // First terminate if already running
-      const isRunning = await this.isAppRunning(deviceId, this.mirrorKitBundleId);
-      if (isRunning) {
-        await this.terminateApp(deviceId, this.mirrorKitBundleId);
-        // Wait a bit for app to fully terminate
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
-      // Launch with arguments using simctl directly
-      const { stderr } = await execAsync(
-        `xcrun simctl launch ${deviceId} ${this.mirrorKitBundleId} --server "${serverUrl}"`
-      );
-
-      if (stderr && !stderr.includes('Waiting')) {
-        console.warn(`[MirrorKit] Launch warning: ${stderr}`);
-      }
-
-      console.log(`[MirrorKit] Launched successfully on ${deviceId}`);
-      return true;
-    } catch (error) {
-      console.error(`[MirrorKit] Failed to launch:`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Stop MirrorKit streaming on the simulator
-   */
-  async stopMirrorKit(deviceId: string): Promise<boolean> {
-    console.log(`[MirrorKit] Stopping on ${deviceId}`);
-    return await this.terminateApp(deviceId, this.mirrorKitBundleId);
-  }
-
-  /**
-   * Start streaming from simulator (install + launch MirrorKit)
-   */
-  async startStreaming(
-    deviceId: string,
-    serverHost: string = 'localhost',
-    serverPort: number = 5001
-  ): Promise<StreamResult> {
-    // Ensure device is ready
+  async startStreaming(deviceId: string): Promise<StreamResult> {
     const device = this.devices.get(deviceId);
     if (!device || (device.status !== 'ready' && device.status !== 'busy')) {
       return { success: false, error: `Device ${deviceId} is not ready` };
     }
 
-    // Install MirrorKit
-    const installResult = await this.installMirrorKit(deviceId);
-    if (!installResult.success) {
-      return { success: false, error: installResult.error };
+    if (!this.captureService) {
+      return { success: false, error: 'No CaptureService configured' };
     }
 
-    // Launch MirrorKit
-    const launched = await this.launchMirrorKit(deviceId, serverHost, serverPort);
-    if (!launched) {
-      return { success: false, error: 'Failed to launch MirrorKit' };
+    if (!this.captureService.isBinaryAvailable()) {
+      return { success: false, error: 'sim-capture binary not found. Run: cd device-stream/tools/sim-capture && ./build.sh' };
     }
 
+    console.log(`[Streaming] Starting ScreenCaptureKit for ${deviceId}`);
+    const started = await this.captureService.startCapture(deviceId);
+    if (!started) {
+      return { success: false, error: 'ScreenCaptureKit capture failed to start' };
+    }
+
+    console.log(`[Streaming] ScreenCaptureKit active for ${deviceId}`);
     return { success: true };
   }
 
   /**
-   * Stop streaming from simulator
+   * Stop streaming from simulator.
    */
   async stopStreaming(deviceId: string): Promise<void> {
-    await this.stopMirrorKit(deviceId);
+    this.captureService?.stopCapture(deviceId);
   }
 
   // ==================== DEVICE MANAGEMENT ====================
@@ -736,9 +656,12 @@ export class IOSSimulatorManager extends EventEmitter {
   }
 
   /**
-   * Clean up - stop all and delete farm-created simulators
+   * Clean up - stop all captures, simulators, and delete farm-created simulators
    */
   async cleanup(): Promise<void> {
+    // Stop all screen captures
+    this.captureService?.cleanup();
+
     await this.stopAll();
 
     // Delete simulators created by the farm

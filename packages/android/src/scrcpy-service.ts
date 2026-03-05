@@ -4,16 +4,19 @@
  */
 
 import type { Adb } from '@yume-chan/adb';
-import { AdbScrcpyClient, AdbScrcpyOptions2_1 } from '@yume-chan/adb-scrcpy';
+import { AdbScrcpyClient, AdbScrcpyOptionsLatest } from '@yume-chan/adb-scrcpy';
+import { VERSION } from '@yume-chan/fetch-scrcpy-server';
+import type { ScrcpyMediaStreamPacket } from '@yume-chan/scrcpy';
+import type { ReadableStream } from '@yume-chan/stream-extra';
 import type { WebSocket } from 'ws';
 import { scrcpySetup } from './scrcpy-setup';
 
 interface ScrcpySession {
-  // Use any for the complex generic type
-  client: AdbScrcpyClient<AdbScrcpyOptions2_1<true>>;
+  client: AdbScrcpyClient<AdbScrcpyOptionsLatest<true>>;
+  videoStream: ReadableStream<ScrcpyMediaStreamPacket>;
   serial: string;
   ws: WebSocket;
-  reader?: ReadableStreamDefaultReader<unknown>;
+  reader?: ReadableStreamDefaultReader<ScrcpyMediaStreamPacket>;
 }
 
 export class ScrcpyService {
@@ -26,29 +29,23 @@ export class ScrcpyService {
     console.log(`Starting scrcpy stream for device ${serial}`);
 
     try {
-      // Ensure scrcpy server is deployed on device
+      // Ensure scrcpy server is deployed on device (force reinstall to update version)
       await scrcpySetup.ensureServerReady(adb, true);
 
-      // Create scrcpy options (using version 2.1 options class)
-      // See: https://tangoadb.dev/scrcpy/options/
-      // The Init interface takes all options in a single object
-      const options = new AdbScrcpyOptions2_1({
-        // Video settings - true enables video
+      // Create scrcpy options - use latest version with video enabled
+      const options = new AdbScrcpyOptionsLatest({
         video: true,
-        // Audio settings (disabled for lower bandwidth)
         audio: false,
-        // Control settings (allow touch/input)
         control: true,
-        // Use tunnel forward mode (more reliable)
         tunnelForward: true,
-        // Send metadata
         sendDeviceMeta: true,
         sendCodecMeta: true,
         sendFrameMeta: true,
+      }, {
+        version: VERSION,
       });
 
       // Start scrcpy client
-      // See: https://tangoadb.dev/scrcpy/start-server/
       const client = await AdbScrcpyClient.start(
         adb,
         scrcpySetup.getDeviceServerPath(),
@@ -57,29 +54,26 @@ export class ScrcpyService {
 
       console.log(`Scrcpy client started for ${serial}`);
 
-      // Get video stream (this is a Promise)
-      // See: https://tangoadb.dev/scrcpy/video/
-      const videoStream = await client.videoStream;
+      // Get video stream
+      const videoStreamPromise = await client.videoStream;
 
-      if (!videoStream) {
+      if (!videoStreamPromise) {
         throw new Error('Video stream not available');
       }
 
-      // Video stream has width, height properties directly on it
-      // and metadata.codec for the codec info
-      const width = videoStream.width;
-      const height = videoStream.height;
-      const codec = videoStream.metadata?.codec;
+      const videoStream = videoStreamPromise.stream;
+      const metadata = videoStreamPromise.metadata;
 
       console.log(`Video stream metadata:`, {
-        codec,
-        width,
-        height,
+        codec: metadata.codec,
+        width: videoStreamPromise.width,
+        height: videoStreamPromise.height,
       });
 
       // Create session
       const session: ScrcpySession = {
         client,
+        videoStream,
         serial,
         ws,
       };
@@ -89,26 +83,13 @@ export class ScrcpyService {
       // Send initial metadata to client
       ws.send(JSON.stringify({
         type: 'metadata',
-        codec,
-        width,
-        height,
+        codec: metadata.codec,
+        width: videoStreamPromise.width,
+        height: videoStreamPromise.height,
       }));
 
-      // Listen for size changes (orientation changes)
-      videoStream.sizeChanged(({ width: newWidth, height: newHeight }: { width: number; height: number }) => {
-        console.log(`Video size changed for ${serial}: ${newWidth}x${newHeight}`);
-        if (ws.readyState === 1) {
-          ws.send(JSON.stringify({
-            type: 'sizeChanged',
-            width: newWidth,
-            height: newHeight,
-          }));
-        }
-      });
-
       // Start reading and forwarding video packets
-      // Cast to ReadableStream<unknown> to avoid complex generic issues
-      await this.pipeVideoStream(session, videoStream.stream as ReadableStream<unknown>);
+      await this.pipeVideoStream(session);
 
     } catch (error) {
       console.error(`Failed to start scrcpy stream for ${serial}:`, error);
@@ -116,11 +97,8 @@ export class ScrcpyService {
     }
   }
 
-  private async pipeVideoStream(
-    session: ScrcpySession,
-    videoStream: ReadableStream<unknown>
-  ): Promise<void> {
-    const { ws, serial } = session;
+  private async pipeVideoStream(session: ScrcpySession): Promise<void> {
+    const { videoStream, ws, serial } = session;
 
     try {
       const reader = videoStream.getReader();
@@ -136,25 +114,16 @@ export class ScrcpyService {
 
         // Forward video packet to WebSocket client
         if (ws.readyState === 1) { // WebSocket.OPEN
-          // Packet structure: { type: 'configuration' | 'data', data: Uint8Array, keyframe?: boolean, pts?: bigint }
-          const packet = value as {
-            type: string;
-            data: Uint8Array;
-            keyframe?: boolean;
-            pts?: bigint;
+          const packet = {
+            type: value.type,
+            data: Array.from(value.data),
+            ...(value.type === 'data' && {
+              keyframe: value.keyframe,
+              pts: value.pts?.toString(),
+            }),
           };
 
-          const output: Record<string, unknown> = {
-            type: packet.type,
-            data: Array.from(packet.data),
-          };
-
-          if (packet.type === 'data') {
-            output.keyframe = packet.keyframe;
-            output.pts = packet.pts?.toString();
-          }
-
-          ws.send(JSON.stringify(output));
+          ws.send(JSON.stringify(packet));
         } else {
           console.log(`WebSocket closed for ${serial}, stopping stream`);
           break;

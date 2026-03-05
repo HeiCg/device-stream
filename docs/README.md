@@ -7,7 +7,7 @@ Modular npm packages for mobile device video streaming - iOS simulators, iOS phy
 | Package | Description |
 |---------|-------------|
 | `@device-stream/core` | Shared types, interfaces, and utilities |
-| `@device-stream/ios-simulator` | iOS Simulator streaming via MirrorKit + polling fallback |
+| `@device-stream/ios-simulator` | iOS Simulator streaming via ScreenCaptureKit + polling fallback |
 | `@device-stream/ios-device` | iOS physical device streaming via WDA MJPEG + qvh H.264 |
 | `@device-stream/android` | Android streaming via TangoADB + scrcpy |
 
@@ -34,7 +34,7 @@ import {
 // Create manager
 const manager = new IOSSimulatorManager({
   bootTimeout: 120000,
-  mirrorKitBundleId: 'com.devicestream.mirrorkit',
+  // sim-capture binary is auto-detected from tools/sim-capture/
 });
 
 // Create and boot simulator

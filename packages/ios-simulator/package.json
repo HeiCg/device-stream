@@ -1,7 +1,7 @@
 {
   "name": "@device-stream/ios-simulator",
-  "version": "1.0.0",
-  "description": "iOS Simulator streaming via MirrorKit + polling fallback",
+  "version": "1.1.0",
+  "description": "iOS Simulator streaming via ScreenCaptureKit + polling fallback",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -25,7 +25,7 @@
     "device-stream",
     "ios",
     "simulator",
-    "mirrorkit",
+    "screencapturekit",
     "screen-mirroring",
     "xcode"
   ],

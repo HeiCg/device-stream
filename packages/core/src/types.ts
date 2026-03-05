@@ -17,7 +17,7 @@ export type InputAction = 'tap' | 'type' | 'back' | 'home' | 'scroll' | 'swipe';
  * Video codec types
  * - h264: Used by Android (scrcpy) and iOS QuickTime fallback
  * - h265: HEVC codec (future support)
- * - mjpeg: Used by iOS MJPEG streaming from WDA and MirrorKit
+ * - mjpeg: Used by iOS MJPEG streaming from WDA and sim-capture
  */
 export type VideoCodec = 'h264' | 'h265' | 'mjpeg';
 

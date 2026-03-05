@@ -1,0 +1,23 @@
+{
+  "name": "@device-stream/android-server",
+  "version": "1.1.0",
+  "description": "On-device HTTP server for fast Android UI automation (NanoHTTPD + UiAutomator)",
+  "private": true,
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "setup": "bash scripts/setup.sh",
+    "start": "bash scripts/start.sh",
+    "clean": "cd gradle-project && ./gradlew clean"
+  },
+  "keywords": [
+    "device-stream",
+    "android",
+    "device-server",
+    "uiautomator",
+    "automation"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
