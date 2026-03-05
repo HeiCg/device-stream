@@ -52,9 +52,11 @@ export class ScrcpySetup {
    */
   async checkServerOnDevice(adb: Adb): Promise<boolean> {
     try {
-      const output = await adb.subprocess.noneProtocol.spawnWaitText(
+      const protocol = adb.subprocess.shellProtocol || adb.subprocess.noneProtocol;
+      const result = await protocol.spawnWaitText(
         `test -f ${DEVICE_SERVER_PATH} && echo exists || echo missing`
       );
+      const output = typeof result === 'string' ? result : result.stdout;
       return output.trim() === 'exists';
     } catch (error) {
       console.error('Failed to check scrcpy server on device:', error);
@@ -68,7 +70,8 @@ export class ScrcpySetup {
   async removeServerFromDevice(adb: Adb): Promise<void> {
     try {
       console.log('Removing old scrcpy server from device...');
-      await adb.subprocess.noneProtocol.spawnWaitText(`rm -f ${DEVICE_SERVER_PATH}`);
+      const protocol = adb.subprocess.shellProtocol || adb.subprocess.noneProtocol;
+      await protocol.spawnWaitText(`rm -f ${DEVICE_SERVER_PATH}`);
       console.log('✓ Old scrcpy server removed');
     } catch (error) {
       console.error('Failed to remove scrcpy server from device:', error);

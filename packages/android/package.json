@@ -1,6 +1,6 @@
 {
   "name": "@device-stream/android",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Android device streaming via TangoADB + scrcpy",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -20,7 +20,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "prepublishOnly": "npm run build",
-    "postinstall": "fetch-scrcpy-server 2.7"
+    "postinstall": "fetch-scrcpy-server 3.3.1"
   },
   "keywords": [
     "device-stream",
@@ -33,12 +33,12 @@
   "license": "MIT",
   "dependencies": {
     "@device-stream/core": "^1.0.0",
-    "@yume-chan/adb": "^2.1.0",
-    "@yume-chan/adb-scrcpy": "^2.3.0",
-    "@yume-chan/adb-server-node-tcp": "^2.1.0",
-    "@yume-chan/fetch-scrcpy-server": "^1.0.0",
-    "@yume-chan/scrcpy": "^2.3.0",
-    "@yume-chan/stream-extra": "^2.0.0",
+    "@yume-chan/adb": "latest",
+    "@yume-chan/adb-scrcpy": "latest",
+    "@yume-chan/adb-server-node-tcp": "latest",
+    "@yume-chan/fetch-scrcpy-server": "latest",
+    "@yume-chan/scrcpy": "latest",
+    "@yume-chan/stream-extra": "latest",
     "ws": "^8.16.0"
   },
   "devDependencies": {

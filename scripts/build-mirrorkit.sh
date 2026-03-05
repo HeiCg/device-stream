@@ -1,48 +1,39 @@
 #!/bin/bash
-# Build MirrorKit iOS app for simulator
+# Build sim-capture — ScreenCaptureKit Swift binary for iOS Simulator streaming
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-MIRRORKIT_DIR="${PROJECT_DIR}/mirrorkit"
+SIM_CAPTURE_DIR="${PROJECT_DIR}/tools/sim-capture"
 
-echo "Building MirrorKit..."
+echo "Building sim-capture..."
 
-if [ ! -d "${MIRRORKIT_DIR}" ]; then
-    echo "Error: MirrorKit source not found at ${MIRRORKIT_DIR}"
-    echo "Make sure the mirrorkit/ directory contains the Xcode project."
+if [ ! -d "${SIM_CAPTURE_DIR}" ]; then
+    echo "Error: sim-capture source not found at ${SIM_CAPTURE_DIR}"
     exit 1
 fi
 
-cd "${MIRRORKIT_DIR}"
-
-# Check for Xcode
-if ! command -v xcodebuild &> /dev/null; then
-    echo "Error: Xcode not found. Please install Xcode from the App Store."
+# Check for Swift
+if ! command -v swift &> /dev/null; then
+    echo "Error: Swift not found. Please install Xcode or Swift toolchain."
     exit 1
 fi
 
-# Build for simulator (arm64 + x86_64)
-echo "Building for iOS Simulator..."
-xcodebuild \
-    -project MirrorKit.xcodeproj \
-    -scheme MirrorKit \
-    -sdk iphonesimulator \
-    -configuration Release \
-    -derivedDataPath ./build \
-    ONLY_ACTIVE_ARCH=NO \
-    clean build
+cd "${SIM_CAPTURE_DIR}"
 
-BUILD_PATH="${MIRRORKIT_DIR}/build/Build/Products/Release-iphonesimulator/MirrorKit.app"
+# Build release binary
+swift build -c release
 
-if [ -d "${BUILD_PATH}" ]; then
+BUILD_PATH="${SIM_CAPTURE_DIR}/.build/release/sim-capture"
+
+if [ -f "${BUILD_PATH}" ]; then
     echo ""
-    echo "✓ MirrorKit built successfully!"
+    echo "sim-capture built successfully!"
     echo "  Location: ${BUILD_PATH}"
     echo ""
-    echo "To install on a simulator:"
-    echo "  xcrun simctl install <device-id> ${BUILD_PATH}"
+    echo "Usage:"
+    echo "  ${BUILD_PATH} --udid <SIMULATOR_UDID> --fps 30 --quality 80 --scale 1"
 else
     echo "Error: Build output not found at ${BUILD_PATH}"
     exit 1

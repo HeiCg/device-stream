@@ -1,0 +1,10 @@
+version: "Apple Swift version 6.0 (swiftlang-6.0.0.9.10 clang-1600.0.26.2)"
+options: "f81fc2a1936374595701013ae69230dbf3be559cfc985f81ce4cb4030dccd0bc"
+build_start_time: [1770935214, 656183000]
+build_end_time: [1770935215, 995753000]
+inputs:
+  "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/BinaryProtocol.swift": [1770923060, 265793024]
+  "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/FrameEncoder.swift": [1770923087, 804876102]
+  "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/ScreenCapture.swift": [1770935208, 535966444]
+  "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/WindowFinder.swift": [1770931674, 554690288]
+  "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/main.swift": [1770923111, 583599952]

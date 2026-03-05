@@ -1,6 +1,6 @@
 /**
  * @device-stream/ios-simulator
- * iOS Simulator streaming via MirrorKit + polling fallback
+ * iOS Simulator streaming via ScreenCaptureKit (sim-capture binary)
  */
 
 export {
@@ -13,6 +13,11 @@ export {
   IOSSimulatorManagerOptions,
   createIOSSimulatorManager,
 } from './simulator-manager';
+
+export {
+  CaptureService,
+  createCaptureService,
+} from './capture-service';
 
 // Re-export core types for convenience
 export {

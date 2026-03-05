@@ -1,0 +1,32 @@
+{
+  "": {
+    "dependencies": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/sim_capture.d",
+    "object": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/sim_capture.o",
+    "swift-dependencies": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/master.swiftdeps"
+  },
+  "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/BinaryProtocol.swift": {
+    "object": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/BinaryProtocol.swift.o",
+    "swiftmodule": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/BinaryProtocol~partial.swiftmodule",
+    "swift-dependencies": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/BinaryProtocol.swiftdeps"
+  },
+  "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/FrameEncoder.swift": {
+    "object": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/FrameEncoder.swift.o",
+    "swiftmodule": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/FrameEncoder~partial.swiftmodule",
+    "swift-dependencies": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/FrameEncoder.swiftdeps"
+  },
+  "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/ScreenCapture.swift": {
+    "object": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/ScreenCapture.swift.o",
+    "swiftmodule": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/ScreenCapture~partial.swiftmodule",
+    "swift-dependencies": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/ScreenCapture.swiftdeps"
+  },
+  "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/WindowFinder.swift": {
+    "object": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/WindowFinder.swift.o",
+    "swiftmodule": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/WindowFinder~partial.swiftmodule",
+    "swift-dependencies": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/WindowFinder.swiftdeps"
+  },
+  "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/main.swift": {
+    "object": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/main.swift.o",
+    "swiftmodule": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/main.swiftdeps"
+  }
+}

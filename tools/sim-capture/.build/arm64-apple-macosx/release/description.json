@@ -1,0 +1,291 @@
+{
+  "builtTestProducts" : [
+
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.sim-capture-arm64-apple-macosx15.0-release.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/sources",
+      "importPath" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/BinaryProtocol.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/FrameEncoder.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/ScreenCapture.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/WindowFinder.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/main.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "sim_capture",
+      "moduleOutputPath" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/Modules/sim_capture.swiftmodule",
+      "objects" : [
+        "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/BinaryProtocol.swift.o",
+        "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/FrameEncoder.swift.o",
+        "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/ScreenCapture.swift.o",
+        "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/WindowFinder.swift.o",
+        "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/main.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-O",
+        "-j11",
+        "-DSWIFT_PACKAGE",
+        "-module-cache-path",
+        "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "sim_capture_main",
+        "-swift-version",
+        "5",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "sim_capture"
+      ],
+      "outputFileMapPath" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/BinaryProtocol.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/FrameEncoder.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/ScreenCapture.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/WindowFinder.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/main.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/Modules/sim_capture.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/BinaryProtocol.swift",
+        "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/FrameEncoder.swift",
+        "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/ScreenCapture.swift",
+        "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/WindowFinder.swift",
+        "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/main.swift"
+      ],
+      "tempsPath" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build",
+      "wholeModuleOptimization" : true
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "sim_capture" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "sim_capture",
+      "-package-name",
+      "sim_capture",
+      "-whole-module-optimization",
+      "-num-threads",
+      "11",
+      "-c",
+      "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/BinaryProtocol.swift",
+      "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/FrameEncoder.swift",
+      "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/ScreenCapture.swift",
+      "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/WindowFinder.swift",
+      "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/main.swift",
+      "-I",
+      "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-O",
+      "-j11",
+      "-DSWIFT_PACKAGE",
+      "-module-cache-path",
+      "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "sim_capture_main",
+      "-swift-version",
+      "5",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "sim_capture",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "sim_capture" : [
+
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  },
+  "writeCommands" : {
+    "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim-capture.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/BinaryProtocol.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/FrameEncoder.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/ScreenCapture.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/WindowFinder.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/main.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim-capture.product/Objects.LinkFileList"
+    },
+    "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/BinaryProtocol.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/FrameEncoder.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/ScreenCapture.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/WindowFinder.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/Sources/main.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/sim_capture.build/sources"
+    },
+    "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/heicg/Desktop/Projects/FromAppToViral/device-stream/tools/sim-capture/.build/arm64-apple-macosx/release/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}
