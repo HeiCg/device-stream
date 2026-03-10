@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PACKAGE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-GRADLE_DIR="$PACKAGE_DIR/gradle-project"
+NATIVE_DIR="$(cd "$PACKAGE_DIR/../../native-servers/android-device-server" && pwd)"
 
 echo "=== @device-stream/android-server build ==="
 
@@ -16,17 +16,17 @@ if [[ -z "${ANDROID_HOME:-}" ]]; then
   fi
 fi
 
-cd "$GRADLE_DIR"
-chmod +x gradlew
+cd "$NATIVE_DIR"
+chmod +x gradlew 2>/dev/null || true
 
 echo "Building app APK..."
-./gradlew :app:assembleDebug --quiet
+./gradlew assembleDebug --quiet
 
 echo "Building test APK (instrumentation server)..."
-./gradlew :server:assembleDebugAndroidTest --quiet
+./gradlew assembleDebugAndroidTest --quiet
 
-APP_APK="$GRADLE_DIR/app/build/outputs/apk/debug/app-debug.apk"
-TEST_APK="$GRADLE_DIR/server/build/outputs/apk/androidTest/debug/server-debug-androidTest.apk"
+APP_APK="$NATIVE_DIR/build/outputs/apk/debug/android-device-server-debug.apk"
+TEST_APK="$NATIVE_DIR/build/outputs/apk/androidTest/debug/android-device-server-debug-androidTest.apk"
 
 if [[ -f "$APP_APK" && -f "$TEST_APK" ]]; then
   echo ""
@@ -35,5 +35,7 @@ if [[ -f "$APP_APK" && -f "$TEST_APK" ]]; then
   echo "  Test APK: $TEST_APK"
 else
   echo "ERROR: Build failed - APKs not found"
+  echo "Looking for APKs in:"
+  find "$NATIVE_DIR/build" -name "*.apk" 2>/dev/null || echo "  (no APKs found)"
   exit 1
 fi

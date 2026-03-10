@@ -1,20 +1,22 @@
 {
   "name": "@device-stream/android-server",
-  "version": "1.1.0",
-  "description": "On-device HTTP server for fast Android UI automation (NanoHTTPD + UiAutomator)",
+  "version": "1.2.0",
+  "description": "On-device TCP JSON-RPC server for Android UI automation (UiAutomator)",
   "private": true,
   "scripts": {
     "build": "bash scripts/build.sh",
     "setup": "bash scripts/setup.sh",
     "start": "bash scripts/start.sh",
-    "clean": "cd gradle-project && ./gradlew clean"
+    "clean": "cd ../../native-servers/android-device-server && ./gradlew clean"
   },
   "keywords": [
     "device-stream",
     "android",
     "device-server",
     "uiautomator",
-    "automation"
+    "automation",
+    "json-rpc",
+    "tcp"
   ],
   "license": "MIT",
   "engines": {
