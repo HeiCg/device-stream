@@ -26,6 +26,9 @@ export class AsyncMutex {
    * Allows next waiting operation to proceed
    */
   release(): void {
+    if (!this.locked) {
+      throw new Error('AsyncMutex: release() called without a matching acquire()');
+    }
     const nextResolve = this.waitQueue.shift();
     if (nextResolve) {
       nextResolve();
@@ -86,6 +89,10 @@ export class DeviceMutexManager {
    * Clean up mutex for a device (when device is removed)
    */
   removeMutex(deviceId: string): void {
+    const mutex = this.mutexes.get(deviceId);
+    if (mutex?.isLocked()) {
+      throw new Error(`Cannot remove mutex for device ${deviceId}: lock is currently held`);
+    }
     this.mutexes.delete(deviceId);
   }
 

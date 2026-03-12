@@ -5,7 +5,7 @@
 
 import { getSimulator, killAllSimulators } from 'appium-ios-simulator';
 import type { Simulator } from 'appium-ios-simulator';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { EventEmitter } from 'events';
 import {
@@ -18,6 +18,7 @@ import {
 import { CaptureService } from './capture-service';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 interface SimctlDevice {
   udid: string;
@@ -96,12 +97,13 @@ export class IOSSimulatorManager extends EventEmitter {
    */
   async getLatestIOSRuntime(): Promise<string | undefined> {
     const runtimes = await this.listRuntimes();
+    const parseSemver = (v: string) => v.split('.').map(Number);
     const iosRuntimes = runtimes
       .filter(r => r.identifier.includes('iOS'))
       .sort((a, b) => {
-        const versionA = parseFloat(a.version);
-        const versionB = parseFloat(b.version);
-        return versionB - versionA;
+        const [aMaj, aMin = 0] = parseSemver(a.version);
+        const [bMaj, bMin = 0] = parseSemver(b.version);
+        return bMaj !== aMaj ? bMaj - aMaj : bMin - aMin;
       });
 
     return iosRuntimes[0]?.identifier;
@@ -322,14 +324,16 @@ export class IOSSimulatorManager extends EventEmitter {
       // Get bundle ID from Info.plist
       let bundleId: string | undefined;
       try {
-        const { stdout } = await execAsync(
-          `/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "${appPath}/Info.plist"`
+        const { stdout } = await execFileAsync(
+          '/usr/libexec/PlistBuddy',
+          ['-c', 'Print :CFBundleIdentifier', `${appPath}/Info.plist`]
         );
         bundleId = stdout.trim();
       } catch {
         try {
-          const { stdout } = await execAsync(
-            `defaults read "${appPath}/Info" CFBundleIdentifier`
+          const { stdout } = await execFileAsync(
+            'defaults',
+            ['read', `${appPath}/Info`, 'CFBundleIdentifier']
           );
           bundleId = stdout.trim();
         } catch {

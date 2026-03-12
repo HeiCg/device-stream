@@ -85,6 +85,13 @@ export class MjpegStreamClient extends EventEmitter {
       res.on('data', (chunk: Buffer) => {
         buffer = Buffer.concat([buffer, chunk]);
 
+        // Buffer overflow protection (4MB max)
+        if (frameStarted && buffer.length > 4 * 1024 * 1024) {
+          console.warn(`[MjpegStreamClient] Buffer overflow for ${udid}, resetting`);
+          buffer = Buffer.alloc(0);
+          frameStarted = false;
+        }
+
         while (buffer.length > 0) {
           if (!frameStarted) {
             const jpegStart = this.findJpegStart(buffer);

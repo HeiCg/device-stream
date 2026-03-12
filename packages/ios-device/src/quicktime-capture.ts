@@ -221,20 +221,29 @@ export class QuickTimeCapture extends EventEmitter {
    * Stop capturing from device
    */
   async stopCapture(udid: string): Promise<void> {
-    const process = this.activeProcesses.get(udid);
+    const proc = this.activeProcesses.get(udid);
 
-    if (!process) {
+    if (!proc) {
       console.warn(`No active capture for device ${udid}`);
       return;
     }
 
-    process.kill('SIGTERM');
+    proc.kill('SIGTERM');
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Wait for process to exit, with timeout and SIGKILL fallback
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => {
+        if (this.activeProcesses.has(udid)) {
+          try { proc.kill('SIGKILL'); } catch { /* ignore */ }
+        }
+        resolve();
+      }, 3000);
 
-    if (this.activeProcesses.has(udid)) {
-      process.kill('SIGKILL');
-    }
+      proc.on('close', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
 
     console.log(`Stopped QuickTime capture for iOS device ${udid}`);
   }

@@ -10,6 +10,8 @@ import { AdbServerNodeTcpConnector } from '@yume-chan/adb-server-node-tcp';
 export class AndroidDeviceService extends BaseDeviceService {
   private client: AdbServerClient;
   private devices: Map<string, Adb> = new Map();
+  private pendingConnections: Map<string, Promise<Adb>> = new Map();
+  private deviceInfoCache: Map<string, Device> = new Map();
 
   constructor() {
     super('android');
@@ -26,16 +28,17 @@ export class AndroidDeviceService extends BaseDeviceService {
       const devices: Device[] = [];
 
       for (const device of deviceList) {
+        let adb: Adb | undefined;
         try {
           // Use createTransport + new Adb()
           // See: https://tangoadb.dev/tango/server/transport/
           const transport = await this.client.createTransport(device);
-          const adb = new Adb(transport);
+          adb = new Adb(transport);
           const props = await this.getDeviceProperties(adb);
 
           const [width, height] = this.parseResolution(props.resolution);
 
-          devices.push({
+          const deviceInfo: Device = {
             serial: device.serial,
             platform: 'android',
             model: props.model || 'Unknown',
@@ -44,7 +47,9 @@ export class AndroidDeviceService extends BaseDeviceService {
             screenHeight: height,
             battery: props.battery || 100,
             connected: this.isConnected(device.serial),
-          });
+          };
+          this.deviceInfoCache.set(device.serial, deviceInfo);
+          devices.push(deviceInfo);
         } catch (error) {
           console.error(`Failed to get properties for device ${device.serial}:`, error);
           devices.push({
@@ -57,6 +62,8 @@ export class AndroidDeviceService extends BaseDeviceService {
             battery: 100,
             connected: false,
           });
+        } finally {
+          if (adb) await adb.close().catch(() => {});
         }
       }
 
@@ -104,8 +111,9 @@ export class AndroidDeviceService extends BaseDeviceService {
     this.assertConnected(serial);
     try {
       const adb = await this.getAdbDevice(serial);
-      const escapedText = text.replace(/ /g, '%s').replace(/'/g, "\\'");
-      await this.runShellCommand(adb, `input text '${escapedText}'`);
+      const shellEscape = (s: string) => "'" + s.replace(/'/g, "'\\''") + "'";
+      const escapedText = text.replace(/ /g, '%s');
+      await this.runShellCommand(adb, `input text ${shellEscape(escapedText)}`);
       console.log(`Input text "${text}" on Android device ${serial}`);
     } catch (error) {
       console.error(`Failed to input text on Android device ${serial}:`, error);
@@ -148,8 +156,12 @@ export class AndroidDeviceService extends BaseDeviceService {
 
   async startMirroring(serial: string): Promise<VideoStreamMetadata> {
     this.assertConnected(serial);
-    // Scrcpy mirroring is handled by ScrcpyService
-    const device = (await this.listDevices()).find(d => d.serial === serial);
+    // Use cached device info to avoid full listDevices call
+    let device = this.deviceInfoCache.get(serial);
+    if (!device) {
+      const devices = await this.listDevices();
+      device = devices.find(d => d.serial === serial);
+    }
     if (!device) {
       throw new Error(`Device ${serial} not found`);
     }
@@ -174,6 +186,19 @@ export class AndroidDeviceService extends BaseDeviceService {
       return this.devices.get(serial)!;
     }
 
+    // Coalesce concurrent connection requests for the same device
+    if (this.pendingConnections.has(serial)) {
+      return this.pendingConnections.get(serial)!;
+    }
+
+    const p = this._createAdbConnection(serial).finally(() => {
+      this.pendingConnections.delete(serial);
+    });
+    this.pendingConnections.set(serial, p);
+    return p;
+  }
+
+  private async _createAdbConnection(serial: string): Promise<Adb> {
     const deviceList = await this.client.getDevices();
     const device = deviceList.find(d => d.serial === serial);
     if (!device) {
@@ -277,14 +302,11 @@ export class AndroidDeviceService extends BaseDeviceService {
 
   async captureUIHierarchy(serial: string): Promise<string> {
     this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
     try {
-      const adb = await this.getAdbDevice(serial);
-
       await this.runShellCommand(adb, 'uiautomator dump /sdcard/ui_dump.xml');
 
       const xmlContent = await this.runShellCommand(adb, 'cat /sdcard/ui_dump.xml');
-
-      await this.runShellCommand(adb, 'rm /sdcard/ui_dump.xml');
 
       if (!xmlContent || xmlContent.includes('ERROR')) {
         throw new Error('Failed to capture UI hierarchy');
@@ -295,6 +317,8 @@ export class AndroidDeviceService extends BaseDeviceService {
     } catch (error) {
       console.error(`Failed to capture UI hierarchy from ${serial}:`, error);
       throw new Error(`Failed to capture UI hierarchy: ${error}`);
+    } finally {
+      await this.runShellCommand(adb, 'rm /sdcard/ui_dump.xml').catch(() => {});
     }
   }
 

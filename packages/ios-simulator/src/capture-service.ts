@@ -204,17 +204,38 @@ export class CaptureService extends EventEmitter {
   /**
    * Stop capturing for a device.
    */
-  stopCapture(deviceId: string): void {
+  async stopCapture(deviceId: string): Promise<void> {
     const instance = this.captures.get(deviceId);
     if (!instance) return;
 
     console.log(`[SimCapture] Stopping for ${deviceId} (${instance.frameCount} frames sent)`);
+    this.captures.delete(deviceId);
+
+    // Destroy stdout to release buffer references
+    try {
+      instance.process.stdout?.destroy();
+    } catch {
+      // stdout may already be destroyed
+    }
+
     try {
       instance.process.kill('SIGTERM');
     } catch {
       // Process may already be dead
+      return;
     }
-    this.captures.delete(deviceId);
+
+    // Wait for process to actually exit
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => {
+        try { instance.process.kill('SIGKILL'); } catch { /* ignore */ }
+        resolve();
+      }, 3000);
+      instance.process.on('exit', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
   }
 
   /**
@@ -239,10 +260,9 @@ export class CaptureService extends EventEmitter {
   /**
    * Stop all captures.
    */
-  cleanup(): void {
-    for (const [deviceId] of this.captures) {
-      this.stopCapture(deviceId);
-    }
+  async cleanup(): Promise<void> {
+    const deviceIds = Array.from(this.captures.keys());
+    await Promise.all(deviceIds.map(deviceId => this.stopCapture(deviceId)));
   }
 
   private parseHeader(data: Buffer): CaptureHeader {

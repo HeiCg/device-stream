@@ -32,13 +32,13 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@device-stream/core": "^1.0.0",
-    "@yume-chan/adb": "latest",
-    "@yume-chan/adb-scrcpy": "latest",
-    "@yume-chan/adb-server-node-tcp": "latest",
-    "@yume-chan/fetch-scrcpy-server": "latest",
-    "@yume-chan/scrcpy": "latest",
-    "@yume-chan/stream-extra": "latest",
+    "@device-stream/core": "^1.1.0",
+    "@yume-chan/adb": "2.5.1",
+    "@yume-chan/adb-scrcpy": "2.3.2",
+    "@yume-chan/adb-server-node-tcp": "2.5.2",
+    "@yume-chan/fetch-scrcpy-server": "1.0.0",
+    "@yume-chan/scrcpy": "2.3.0",
+    "@yume-chan/stream-extra": "2.1.0",
     "ws": "^8.16.0"
   },
   "devDependencies": {

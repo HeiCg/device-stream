@@ -16,6 +16,7 @@ interface SimulatorConnection {
   metadata?: SimulatorMetadata;
   lastFrameTime: number;
   frameCount: number;
+  cleanupTimer?: ReturnType<typeof setTimeout>;
 }
 
 export class SimulatorStreamService {
@@ -34,6 +35,12 @@ export class SimulatorStreamService {
         frameCount: 0,
       };
       this.connections.set(deviceId, conn);
+    }
+
+    // Cancel any pending cleanup timer since a new browser connected
+    if (conn.cleanupTimer) {
+      clearTimeout(conn.cleanupTimer);
+      conn.cleanupTimer = undefined;
     }
 
     conn.browsers.add(ws);
@@ -55,7 +62,7 @@ export class SimulatorStreamService {
 
       // Cleanup if no more browsers after a grace period
       if (conn?.browsers.size === 0) {
-        setTimeout(() => {
+        conn.cleanupTimer = setTimeout(() => {
           const currentConn = this.connections.get(deviceId);
           if (currentConn?.browsers.size === 0) {
             this.connections.delete(deviceId);

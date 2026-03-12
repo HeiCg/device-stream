@@ -138,6 +138,25 @@ export abstract class BaseDeviceService implements DeviceService {
     return connection;
   }
 
+  async swipe(
+    _serial: string,
+    _startX: number,
+    _startY: number,
+    _endX: number,
+    _endY: number,
+    _duration?: number
+  ): Promise<void> {
+    throw new Error(`swipe is not supported on platform: ${this.platform}`);
+  }
+
+  async scroll(
+    _serial: string,
+    _direction: ScrollDirection,
+    _distance?: number
+  ): Promise<void> {
+    throw new Error(`scroll is not supported on platform: ${this.platform}`);
+  }
+
   // Abstract methods to be implemented by platform-specific services
   abstract listDevices(): Promise<Device[]>;
   abstract connect(serial: string): Promise<void>;

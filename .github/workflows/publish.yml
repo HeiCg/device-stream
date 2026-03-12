@@ -24,7 +24,7 @@ jobs:
           scope: '@device-stream'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -32,24 +32,27 @@ jobs:
         run: npm run build
 
       - name: Publish @device-stream/core
+        id: publish_core
         run: npm publish -w @device-stream/core --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
       - name: Publish @device-stream/ios-simulator
+        if: steps.publish_core.outcome == 'success'
         run: npm publish -w @device-stream/ios-simulator --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Publish @device-stream/ios-device
+        if: steps.publish_core.outcome == 'success'
         run: npm publish -w @device-stream/ios-device --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Publish @device-stream/android
+        if: steps.publish_core.outcome == 'success'
         run: npm publish -w @device-stream/android --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

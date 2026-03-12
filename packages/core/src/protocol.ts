@@ -42,7 +42,7 @@ export const MESSAGE_TYPE = {
  */
 export interface MetadataMessage {
   type: 'metadata';
-  codec: number;
+  codec: 0 | 1 | 2;
   codecName: string;
   width: number;
   height: number;
@@ -64,7 +64,7 @@ export interface FrameMessage {
  */
 export interface DataMessage {
   type: 'data';
-  data: number[];  // Raw bytes as array
+  data: string;  // Base64 encoded bytes
   keyframe: boolean;
   pts: string;  // BigInt as string
 }
@@ -94,7 +94,7 @@ export function createMetadataMessage(
   height: number,
   fps?: number
 ): MetadataMessage {
-  const codecMap = { h264: 0, mjpeg: 1, h265: 2 };
+  const codecMap: Record<string, 0 | 1 | 2> = { h264: 0, mjpeg: 1, h265: 2 };
   return {
     type: 'metadata',
     codec: codecMap[codec],
@@ -124,13 +124,16 @@ export function createFrameMessage(
  * Create a data message for H.264
  */
 export function createDataMessage(
-  data: number[],
+  data: Uint8Array | number[],
   keyframe: boolean,
   pts: bigint
 ): DataMessage {
+  const base64 = data instanceof Uint8Array
+    ? Buffer.from(data).toString('base64')
+    : Buffer.from(data).toString('base64');
   return {
     type: 'data',
-    data,
+    data: base64,
     keyframe,
     pts: pts.toString(),
   };

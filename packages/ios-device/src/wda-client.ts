@@ -3,7 +3,6 @@
  * Provides iOS automation capabilities
  */
 
-import fetch, { Response } from 'node-fetch';
 import { iosConfig } from './config';
 
 /**
@@ -39,7 +38,7 @@ async function fetchWithTimeout(
   url: string,
   options: { method?: string; headers?: Record<string, string>; body?: string } = {},
   timeoutMs: number = 30000
-): Promise<Response> {
+): Promise<globalThis.Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -48,7 +47,7 @@ async function fetchWithTimeout(
       method: options.method,
       headers: options.headers,
       body: options.body,
-      signal: controller.signal as AbortSignal,
+      signal: controller.signal,
     });
     return response;
   } finally {

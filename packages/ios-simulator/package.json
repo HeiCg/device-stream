@@ -31,7 +31,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@device-stream/core": "^1.0.0",
+    "@device-stream/core": "^1.1.0",
     "appium-ios-simulator": "^6.1.0",
     "ws": "^8.16.0"
   },

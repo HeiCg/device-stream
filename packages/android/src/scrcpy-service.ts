@@ -17,6 +17,7 @@ interface ScrcpySession {
   serial: string;
   ws: WebSocket;
   reader?: ReadableStreamDefaultReader<ScrcpyMediaStreamPacket>;
+  stopping?: boolean;
 }
 
 export class ScrcpyService {
@@ -88,8 +89,10 @@ export class ScrcpyService {
         height: videoStreamPromise.height,
       }));
 
-      // Start reading and forwarding video packets
-      await this.pipeVideoStream(session);
+      // Start reading and forwarding video packets (fire-and-forget to avoid blocking)
+      this.pipeVideoStream(session).catch(err =>
+        console.error(`pipeVideoStream error for ${serial}:`, err)
+      );
 
     } catch (error) {
       console.error(`Failed to start scrcpy stream for ${serial}:`, error);
@@ -116,7 +119,7 @@ export class ScrcpyService {
         if (ws.readyState === 1) { // WebSocket.OPEN
           const packet = {
             type: value.type,
-            data: Array.from(value.data),
+            data: Buffer.from(value.data).toString('base64'),
             ...(value.type === 'data' && {
               keyframe: value.keyframe,
               pts: value.pts?.toString(),
@@ -139,20 +142,21 @@ export class ScrcpyService {
   async stopStream(serial: string): Promise<void> {
     const session = this.sessions.get(serial);
 
-    if (session) {
-      console.log(`Stopping scrcpy stream for ${serial}`);
+    if (!session || session.stopping) return;
 
-      try {
-        if (session.reader) {
-          await session.reader.cancel();
-        }
+    session.stopping = true;
+    this.sessions.delete(serial);
 
-        await session.client.close();
-      } catch (error) {
-        console.error(`Error stopping stream for ${serial}:`, error);
+    console.log(`Stopping scrcpy stream for ${serial}`);
+
+    try {
+      if (session.reader) {
+        await session.reader.cancel();
       }
 
-      this.sessions.delete(serial);
+      await session.client.close();
+    } catch (error) {
+      console.error(`Error stopping stream for ${serial}:`, error);
     }
   }
 

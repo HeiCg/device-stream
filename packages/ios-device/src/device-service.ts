@@ -19,6 +19,7 @@ export class IOSDeviceService extends BaseDeviceService {
   private streamMode: Map<string, 'mjpeg' | 'quicktime'> = new Map();
   private mutexManager = new DeviceMutexManager();
   private healthCheckInterval: NodeJS.Timeout | null = null;
+  private screenDimensionsCache: Map<string, { width: number; height: number }> = new Map();
 
   constructor() {
     super('ios');
@@ -97,16 +98,25 @@ export class IOSDeviceService extends BaseDeviceService {
         try {
           await webDriverAgentClient.createSession(serial);
           this.wdaSessions.set(serial, true);
-        } catch {
+        } catch (wdaError) {
           console.log('Attempting to start WebDriverAgent...');
-          await goIOSClient.installWebDriverAgent(serial);
+          try {
+            await goIOSClient.installWebDriverAgent(serial);
 
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          await webDriverAgentClient.createSession(serial);
-          this.wdaSessions.set(serial, true);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            await webDriverAgentClient.createSession(serial);
+            this.wdaSessions.set(serial, true);
+          } catch (retryError) {
+            await goIOSClient.cleanup(serial).catch(() => {});
+            throw retryError;
+          }
         }
 
         this.markConnected(serial, webDriverAgentClient.getSession(serial));
+
+        // Cache screen dimensions for scroll() calls
+        const dims = this.getScreenDimensions(device.productType);
+        this.screenDimensionsCache.set(serial, dims);
 
         console.log(`iOS device ${serial} connected successfully`);
       } catch (error) {
@@ -118,21 +128,26 @@ export class IOSDeviceService extends BaseDeviceService {
 
   async disconnect(serial: string): Promise<void> {
     await this.mutexManager.withDeviceLock(serial, async () => {
-      try {
-        await webDriverAgentClient.deleteSession(serial);
-        this.wdaSessions.delete(serial);
-
-        await goIOSClient.cleanup(serial);
-
-        this.markDisconnected(serial);
-        this.mutexManager.removeMutex(serial);
-
-        console.log(`iOS device ${serial} disconnected`);
-      } catch (error) {
-        console.error(`Failed to disconnect iOS device ${serial}:`, error);
-        throw new Error(`Failed to disconnect iOS device: ${error}`);
-      }
+      await this._teardown(serial);
     });
+    this.mutexManager.removeMutex(serial);
+  }
+
+  private async _teardown(serial: string): Promise<void> {
+    try {
+      await webDriverAgentClient.deleteSession(serial);
+      this.wdaSessions.delete(serial);
+
+      await goIOSClient.cleanup(serial);
+
+      this.markDisconnected(serial);
+      this.streamMode.delete(serial);
+
+      console.log(`iOS device ${serial} disconnected`);
+    } catch (error) {
+      console.error(`Failed to disconnect iOS device ${serial}:`, error);
+      throw new Error(`Failed to disconnect iOS device: ${error}`);
+    }
   }
 
   async tap(serial: string, x: number, y: number): Promise<void> {
@@ -187,10 +202,9 @@ export class IOSDeviceService extends BaseDeviceService {
   ): Promise<void> {
     this.assertConnected(serial);
 
-    const devices = await this.listDevices();
-    const device = devices.find(d => d.serial === serial);
-    const centerX = device ? Math.floor(device.screenWidth / 2) : undefined;
-    const centerY = device ? Math.floor(device.screenHeight / 2) : undefined;
+    const dims = this.screenDimensionsCache.get(serial);
+    const centerX = dims ? Math.floor(dims.width / 2) : undefined;
+    const centerY = dims ? Math.floor(dims.height / 2) : undefined;
 
     await webDriverAgentClient.scroll(serial, direction, distance, centerX, centerY);
   }
@@ -208,6 +222,13 @@ export class IOSDeviceService extends BaseDeviceService {
     try {
       const mjpegAvailable = await mjpegStreamClient.isAvailable();
       if (mjpegAvailable) {
+        // Register error listener before connecting to avoid unhandled error events
+        const errorHandler = (event: { udid: string; error: Error }) => {
+          if (event.udid === serial) {
+            console.error(`[IOSDeviceService] MJPEG stream error for ${serial}:`, event.error);
+          }
+        };
+        mjpegStreamClient.on('error', errorHandler);
         mjpegStreamClient.connect(serial);
         this.streamMode.set(serial, 'mjpeg');
         console.log(`Started MJPEG screen mirroring for iOS device ${serial}`);
@@ -305,9 +326,11 @@ export class IOSDeviceService extends BaseDeviceService {
         try {
           const isHealthy = await this.healthCheck(serial);
           if (!isHealthy) {
-            console.warn(`[IOSDeviceService] Device ${serial} failed health check, marking as disconnected`);
-            this.markDisconnected(serial);
-            this.wdaSessions.delete(serial);
+            console.warn(`[IOSDeviceService] Device ${serial} failed health check, tearing down`);
+            await this._teardown(serial).catch(err =>
+              console.error(`[IOSDeviceService] Teardown failed for ${serial}:`, err)
+            );
+            this.mutexManager.removeMutex(serial);
           }
         } catch (error) {
           console.error(`[IOSDeviceService] Health check error for ${serial}:`, error);

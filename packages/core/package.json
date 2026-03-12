@@ -27,9 +27,6 @@
     "interfaces"
   ],
   "license": "MIT",
-  "dependencies": {
-    "ws": "^8.16.0"
-  },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@types/ws": "^8.5.10",
