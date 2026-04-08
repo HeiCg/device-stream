@@ -11,6 +11,8 @@ Modular npm packages for mobile device video streaming and control — iOS simul
 | [@device-stream/ios-device](./packages/ios-device) | iOS physical device streaming via WDA MJPEG | macOS |
 | [@device-stream/android](./packages/android) | Android streaming via TangoADB + scrcpy | All |
 | [@device-stream/android-server](./packages/android-server) | On-device HTTP server for fast Android control | All |
+| [@device-stream/agent](./packages/agent) | LLM agent intelligence layer — navigation graphs, skeleton fingerprinting, compact state | All |
+| [@device-stream/stream-only](./packages/stream-only) | Stream device screens to browsers via WebSocket — no control APIs | All |
 
 ## System Dependencies
 
@@ -65,6 +67,56 @@ npm run build:sim-capture
 ```
 
 ## Usage Examples
+
+### Stream-Only — View Device Screens in Browser
+
+The simplest way to get started — stream device screens with zero control APIs:
+
+```typescript
+import { createStreamServer } from '@device-stream/stream-only';
+
+const server = await createStreamServer({ port: 3456 });
+
+// List available devices (Android + iOS Simulator)
+const devices = await server.listDevices();
+
+// Start streaming a device
+await server.startStream(devices[0].serial);
+
+// Browsers connect via WebSocket at /stream/{serial}
+// REST: GET /devices returns available devices as JSON
+```
+
+Supports Android (H.264 via scrcpy) and iOS Simulator (MJPEG via ScreenCaptureKit). See [docs/stream-only.md](./docs/stream-only.md) for full API reference.
+
+### Agent — AI-Driven Device Control
+
+```typescript
+import { AgentSession } from '@device-stream/agent';
+import {
+  compressTree,
+  serializeToCompactText,
+  computeFingerprint,
+  NavigationGraph,
+  findElement,
+  computeCenter,
+} from '@device-stream/agent';
+
+// Compress a UI hierarchy tree for LLM consumption
+const compressed = compressTree(rawHierarchy);
+const compactText = serializeToCompactText(compressed);
+
+// Fingerprint screens for navigation tracking
+const fingerprint = computeFingerprint(compressed);
+
+// Build navigation graphs across screens
+const graph = new NavigationGraph();
+graph.addEdge({ from: 'home', to: 'settings', action: { type: 'tap', target: 'Settings' } });
+
+// Find elements and compute tap coordinates
+const element = findElement(compressed, { text: 'Submit' });
+const center = computeCenter(element);
+```
 
 ### Android — Stream + Control via device-server
 
@@ -253,6 +305,7 @@ device-stream/
 │   │       ├── device-service.ts      # Main service
 │   │       ├── go-ios-client.ts       # go-ios CLI wrapper
 │   │       ├── wda-client.ts          # WebDriverAgent HTTP client
+│   │       ├── wda-hierarchy-parser.ts # WDA UI hierarchy parser
 │   │       ├── mjpeg-client.ts        # MJPEG stream parser
 │   │       └── quicktime-capture.ts   # H.264 fallback
 │   │
@@ -260,30 +313,55 @@ device-stream/
 │   │   └── src/
 │   │       ├── device-service.ts      # ADB device management
 │   │       ├── scrcpy-service.ts      # Scrcpy H.264 streaming
-│   │       └── scrcpy-setup.ts        # Server deployment
+│   │       ├── scrcpy-setup.ts        # Server deployment
+│   │       └── hierarchy-parser.ts    # Android UI hierarchy parser
 │   │
-│   └── android-server/          # @device-stream/android-server
-│       ├── package.json
-│       ├── scripts/
-│       │   ├── build.sh               # Build APKs via Gradle
-│       │   ├── setup.sh               # Check/build APKs
-│       │   └── start.sh               # Install + port-forward + start
-│       └── gradle-project/
-│           ├── app/                    # Stub host APK
-│           └── server/                 # Instrumentation test (NanoHTTPD + UiAutomator)
-│               └── src/androidTest/java/com/fromapptoviral/deviceserver/
-│                   ├── DeviceHttpServer.kt          # HTTP router
-│                   ├── DeviceServerInstrumentation.kt # Entry point
-│                   └── handlers/                    # Tap, Swipe, Type, Screenshot, etc.
+│   ├── android-server/          # @device-stream/android-server (private)
+│   │   ├── package.json
+│   │   ├── scripts/
+│   │   │   ├── build.sh               # Build APKs via Gradle
+│   │   │   ├── setup.sh               # Check/build APKs
+│   │   │   └── start.sh               # Install + port-forward + start
+│   │   └── gradle-project/
+│   │       ├── app/                    # Stub host APK
+│   │       └── server/                 # Instrumentation test (NanoHTTPD + UiAutomator)
+│   │           └── src/androidTest/java/com/fromapptoviral/deviceserver/
+│   │               ├── DeviceHttpServer.kt          # HTTP router
+│   │               ├── DeviceServerInstrumentation.kt # Entry point
+│   │               └── handlers/                    # Tap, Swipe, Type, Screenshot, etc.
+│   │
+│   ├── agent/                   # @device-stream/agent
+│   │   └── src/
+│   │       ├── agent-session.ts       # High-level agent session management
+│   │       ├── types.ts               # Agent-specific types
+│   │       ├── navigation-graph.ts    # Screen-to-screen navigation tracking
+│   │       ├── skeleton-fingerprint.ts # Zone classification + screen fingerprinting
+│   │       ├── compact-serializer.ts  # LLM-optimized state serialization
+│   │       ├── element-actions.ts     # Element finding + coordinate computation
+│   │       └── tree-compressor.ts     # UI hierarchy compression
+│   │
+│   └── stream-only/             # @device-stream/stream-only
+│       └── src/
+│           ├── stream-server.ts       # HTTP + WebSocket server
+│           ├── types.ts               # Stream-specific types
+│           ├── android-streamer.ts    # Android H.264 streaming via scrcpy
+│           └── simulator-streamer.ts  # iOS Simulator MJPEG streaming
+│
+├── native-servers/
+│   ├── android-device-server/   # Kotlin Android instrumentation test (Gradle)
+│   └── ios-xctest-server/       # Swift XCTest TCP JSON-RPC server (iOS equivalent of android-device-server)
 │
 ├── tools/
 │   └── sim-capture/             # ScreenCaptureKit Swift binary (MJPEG encoder)
 │
 ├── test-app/                    # Standalone test viewer
 │   ├── server.ts                # HTTP + WS server
-│   └── index.html               # Browser UI with streaming + controls
+│   ├── index.html               # Browser UI with streaming + controls
+│   ├── poc-stream-only.ts       # Stream-only mode proof of concept
+│   └── poc-viewer.html          # POC viewer
 │
 └── docs/                        # Documentation
+    └── stream-only.md           # Stream-only package reference
 ```
 
 ## Performance Comparison
@@ -302,11 +380,13 @@ device-stream/
 ```bash
 npm run build                # Build all packages (core first, then the rest)
 npm run build:core           # Build core only
+npm run build:agent          # Build agent package only
 npm run build:android        # Build android package only
 npm run build:ios-simulator  # Build ios-simulator package only
 npm run build:ios-device     # Build ios-device package only
 npm run build:android-server # Build on-device server APKs
-npm run build:sim-capture      # Build sim-capture Swift binary (macOS)
+npm run build:stream-only    # Build stream-only package only
+npm run build:sim-capture    # Build sim-capture Swift binary (macOS)
 npm run clean                # Clean all dist/ folders
 npm run lint                 # TypeScript type-check all packages
 npm run test                 # Run tests across all packages
