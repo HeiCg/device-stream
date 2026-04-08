@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>stream-only POC</title>
+  <style>
+    body { margin: 0; background: #111; color: #eee; font-family: monospace; display: flex; flex-direction: column; align-items: center; }
+    #status { padding: 16px; font-size: 14px; }
+    canvas { max-width: 90vw; max-height: 85vh; background: #222; }
+    #info { padding: 8px; font-size: 12px; color: #888; }
+  </style>
+</head>
+<body>
+  <div id="status">Connecting...</div>
+  <div id="player-container"></div>
+  <div id="info"></div>
+
+  <script>
+    const status = document.getElementById('status');
+    const info = document.getElementById('info');
+    const container = document.getElementById('player-container');
+    let frameCount = 0;
+    let startTime = 0;
+
+    async function start() {
+      const res = await fetch('/devices');
+      const devices = await res.json();
+
+      if (devices.length === 0) {
+        status.textContent = 'No devices found';
+        return;
+      }
+
+      const device = devices[0];
+      status.textContent = 'Connecting to ' + device.name + ' (' + device.serial + ')...';
+
+      const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(wsProtocol + '//' + location.host + '/stream/' + device.serial);
+
+      let codec = null;
+      let canvas = null;
+      let ctx = null;
+      let decoder = null;
+      let configData = null; // Cached SPS/PPS for prepending to keyframes
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+
+        if (msg.type === 'metadata') {
+          codec = msg.codecName || 'h264';
+          const w = msg.width || 720;
+          const h = msg.height || 1280;
+          status.textContent = 'Streaming: ' + device.name + ' — ' + codec + ' ' + w + 'x' + h;
+          startTime = Date.now();
+
+          if (codec === 'h264' && typeof VideoDecoder !== 'undefined') {
+            // Use WebCodecs API (hardware-accelerated H.264 decoding)
+            canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            canvas.style.maxWidth = '90vw';
+            canvas.style.maxHeight = '85vh';
+            container.replaceChildren(canvas);
+            ctx = canvas.getContext('2d');
+
+            decoder = new VideoDecoder({
+              output: (frame) => {
+                // Resize canvas if frame dimensions differ
+                if (canvas.width !== frame.displayWidth || canvas.height !== frame.displayHeight) {
+                  canvas.width = frame.displayWidth;
+                  canvas.height = frame.displayHeight;
+                }
+                ctx.drawImage(frame, 0, 0);
+                frame.close();
+              },
+              error: (e) => {
+                console.error('VideoDecoder error:', e);
+                info.textContent += ' | Decoder error: ' + e.message;
+              },
+            });
+          } else if (codec !== 'h264') {
+            // MJPEG fallback
+            canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            canvas.style.maxWidth = '90vw';
+            canvas.style.maxHeight = '85vh';
+            container.replaceChildren(canvas);
+            ctx = canvas.getContext('2d');
+          } else {
+            status.textContent += ' (WebCodecs not supported)';
+          }
+          return;
+        }
+
+        // H.264 via WebCodecs
+        if (msg.type === 'configuration' && codec === 'h264' && decoder) {
+          // Store SPS/PPS config — needed to configure decoder and prepend to keyframes
+          configData = Uint8Array.from(atob(msg.data), c => c.charCodeAt(0));
+
+          // Parse SPS to build codec string for VideoDecoder.configure()
+          const codecString = parseCodecFromSPS(configData);
+          decoder.configure({
+            codec: codecString,
+            optimizeForLatency: true,
+          });
+
+          frameCount++;
+          const elapsed = (Date.now() - startTime) / 1000;
+          const fps = elapsed > 0 ? (frameCount / elapsed).toFixed(1) : '0';
+          info.textContent = 'Frames: ' + frameCount + ' | FPS: ' + fps + ' | H.264 (WebCodecs)';
+          return;
+        }
+
+        if (msg.type === 'data' && codec === 'h264' && decoder) {
+          frameCount++;
+          const elapsed = (Date.now() - startTime) / 1000;
+          const fps = elapsed > 0 ? (frameCount / elapsed).toFixed(1) : '0';
+          info.textContent = 'Frames: ' + frameCount + ' | FPS: ' + fps + ' | H.264 (WebCodecs)';
+
+          const frameData = Uint8Array.from(atob(msg.data), c => c.charCodeAt(0));
+          const isKey = msg.keyframe === true;
+
+          // For keyframes, prepend SPS/PPS config (Annex B) as required by WebCodecs
+          let data;
+          if (isKey && configData) {
+            data = new Uint8Array(configData.length + frameData.length);
+            data.set(configData, 0);
+            data.set(frameData, configData.length);
+          } else {
+            data = frameData;
+          }
+
+          try {
+            if (decoder.state === 'configured') {
+              decoder.decode(new EncodedVideoChunk({
+                type: isKey ? 'key' : 'delta',
+                timestamp: performance.now() * 1000, // microseconds
+                data: data,
+              }));
+            }
+          } catch (e) {
+            console.error('Decode error:', e);
+          }
+          return;
+        }
+
+        // MJPEG frames
+        if (msg.type === 'frame' && codec === 'mjpeg' && ctx) {
+          frameCount++;
+          const elapsed = (Date.now() - startTime) / 1000;
+          const fps = elapsed > 0 ? (frameCount / elapsed).toFixed(1) : '0';
+          info.textContent = 'Frames: ' + frameCount + ' | FPS: ' + fps + ' | MJPEG';
+
+          const img = new Image();
+          img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          img.src = 'data:image/jpeg;base64,' + msg.data;
+        }
+
+        if (msg.type === 'device_disconnected') {
+          status.textContent = 'Device disconnected';
+        }
+      };
+
+      ws.onclose = () => { info.textContent += ' | WebSocket closed'; };
+      ws.onerror = () => { status.textContent = 'WebSocket error'; };
+    }
+
+    /**
+     * Parse Annex B SPS NAL unit to build an avc1 codec string.
+     * Falls back to "avc1.640028" (High profile, level 4.0) if parsing fails.
+     */
+    function parseCodecFromSPS(configBytes) {
+      // Find SPS NAL unit in Annex B stream (NAL type 7 = SPS)
+      // Start codes: 0x00000001 or 0x000001
+      for (let i = 0; i < configBytes.length - 4; i++) {
+        let nalStart = -1;
+        if (configBytes[i] === 0 && configBytes[i+1] === 0 && configBytes[i+2] === 0 && configBytes[i+3] === 1) {
+          nalStart = i + 4;
+        } else if (configBytes[i] === 0 && configBytes[i+1] === 0 && configBytes[i+2] === 1) {
+          nalStart = i + 3;
+        }
+        if (nalStart >= 0 && nalStart < configBytes.length) {
+          const nalType = configBytes[nalStart] & 0x1f;
+          if (nalType === 7 && nalStart + 3 < configBytes.length) {
+            // SPS found: profile_idc, constraint_set_flags, level_idc
+            const profile = configBytes[nalStart + 1];
+            const compat = configBytes[nalStart + 2];
+            const level = configBytes[nalStart + 3];
+            return 'avc1.' + toHex(profile) + toHex(compat) + toHex(level);
+          }
+        }
+      }
+      return 'avc1.640028'; // Fallback: High profile, level 4.0
+    }
+
+    function toHex(n) {
+      return n.toString(16).padStart(2, '0');
+    }
+
+    start();
+  </script>
+</body>
+</html>
