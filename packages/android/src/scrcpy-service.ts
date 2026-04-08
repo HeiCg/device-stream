@@ -258,7 +258,7 @@ export class ScrcpyService {
     let frameCount = 0;
 
     try {
-      const reader = videoStream.getReader();
+      const reader = videoStream.getReader() as unknown as ReadableStreamDefaultReader<ScrcpyMediaStreamPacket>;
       session.reader = reader;
 
       while (true) {
