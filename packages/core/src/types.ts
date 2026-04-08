@@ -194,3 +194,95 @@ export type DeviceFarmEvent =
   | { type: 'device:error'; device: FarmDevice; error: string }
   | { type: 'queue:added'; taskId: string; platform: DevicePlatform }
   | { type: 'queue:fulfilled'; taskId: string; deviceId: string };
+
+// ─── New types for competitive feature parity ───
+
+/**
+ * Platform capability identifiers.
+ * Each platform adapter declares which capabilities it supports.
+ */
+export type PlatformCapability =
+  | 'accessibility'
+  | 'appManagement'
+  | 'deepLinks'
+  | 'location'
+  | 'appearance'
+  | 'locale'
+  | 'permissions'
+  | 'clipboard'
+  | 'recording'
+  | 'media'
+  | 'logStream'
+  | 'biometrics'
+  | 'pushNotification';
+
+/**
+ * A node in the UI accessibility tree.
+ * Matches the format produced by both Android uiautomator and iOS WDA.
+ */
+export interface AccessibilityNode {
+  index: number;
+  className: string;
+  resourceId?: string;
+  text?: string;
+  contentDesc?: string;
+  bounds: { x1: number; y1: number; x2: number; y2: number };
+  clickable: boolean;
+  scrollable: boolean;
+  focused: boolean;
+  enabled: boolean;
+  checked?: boolean;
+  selected?: boolean;
+  children?: AccessibilityNode[];
+}
+
+/**
+ * Combined device state snapshot — a11y tree + app info + device context.
+ * Inspired by droidrun-portal's `/state_full` and ios-portal's `/state` endpoints.
+ */
+export interface DeviceStateSnapshot {
+  tree: AccessibilityNode[];
+  appInfo: {
+    currentApp: string;
+    packageName: string;
+    keyboardVisible: boolean;
+  };
+  deviceContext: {
+    screenWidth: number;
+    screenHeight: number;
+    displayRotation?: number;
+  };
+  screenshot?: string;
+  captureMs?: number;
+}
+
+/**
+ * Information about an installed application
+ */
+export interface AppInfo {
+  bundleId: string;
+  name: string;
+  version?: string;
+  type: 'user' | 'system';
+}
+
+/**
+ * Log level for device log entries
+ */
+export type LogLevel = 'verbose' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+
+/**
+ * A single log entry from a device log stream
+ */
+export interface LogEntry {
+  timestamp: number;
+  level: LogLevel;
+  tag: string;
+  message: string;
+  pid?: number;
+}
+
+/**
+ * Appearance mode for device UI
+ */
+export type AppearanceMode = 'light' | 'dark';
