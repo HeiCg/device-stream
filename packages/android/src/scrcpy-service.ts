@@ -254,6 +254,9 @@ export class ScrcpyService {
   ): Promise<void> {
     const { videoStream, serial } = session;
 
+    console.log('[pipeCallbackStream] Starting frame reader for', serial);
+    let frameCount = 0;
+
     try {
       const reader = videoStream.getReader();
       session.reader = reader;
@@ -262,8 +265,13 @@ export class ScrcpyService {
         const { done, value } = await reader.read();
 
         if (done) {
-          console.log('Callback video stream ended for', serial);
+          console.log('Callback video stream ended for', serial, 'after', frameCount, 'frames');
           break;
+        }
+
+        frameCount++;
+        if (frameCount <= 3 || frameCount % 100 === 0) {
+          console.log('[pipeCallbackStream]', serial, 'frame', frameCount, 'type:', value.type, 'size:', value.data?.length);
         }
 
         const packet = {

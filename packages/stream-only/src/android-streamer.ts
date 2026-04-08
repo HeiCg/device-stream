@@ -6,6 +6,12 @@ interface AndroidSession {
   serial: string;
   browsers: Set<WebSocket>;
   metadata?: { codec: number; width: number; height: number };
+  deviceWidth: number;
+  deviceHeight: number;
+  /** Cached H.264 configuration (SPS/PPS) — needed to initialize a decoder */
+  lastConfig?: string;
+  /** Cached last keyframe — lets late-joining browsers see the current screen */
+  lastKeyframe?: string;
 }
 
 export class AndroidStreamer {
@@ -46,13 +52,19 @@ export class AndroidStreamer {
       };
     }
 
+    // Get device dimensions for fallback
+    const devices = await this.deviceService.listDevices();
+    const deviceInfo = devices.find(d => d.serial === serial);
+    const fallbackWidth = deviceInfo?.screenWidth ?? 1080;
+    const fallbackHeight = deviceInfo?.screenHeight ?? 1920;
+
     // Connect to device via ADB
     await this.deviceService.connect(serial);
     const adb = await this.deviceService.getDevice(serial);
 
     // Ensure session entry exists for WS clients that connected early
     if (!this.sessions.has(serial)) {
-      this.sessions.set(serial, { serial, browsers: new Set() });
+      this.sessions.set(serial, { serial, browsers: new Set(), deviceWidth: fallbackWidth, deviceHeight: fallbackHeight });
     }
     const session = this.sessions.get(serial)!;
 
@@ -61,15 +73,18 @@ export class AndroidStreamer {
       adb,
       serial,
       (metadata) => {
-        session.metadata = metadata;
+        // Use device dimensions as fallback when scrcpy returns 0
+        const width = metadata.width || session.deviceWidth;
+        const height = metadata.height || session.deviceHeight;
+        session.metadata = { ...metadata, width, height };
 
         // Send metadata to all already-connected browsers
         const metaMsg = JSON.stringify({
           type: 'metadata',
           codec: metadata.codec,
           codecName: 'h264',
-          width: metadata.width,
-          height: metadata.height,
+          width,
+          height,
           fps: 60,
         });
         session.browsers.forEach(ws => {
@@ -79,8 +94,15 @@ export class AndroidStreamer {
         });
       },
       (packet) => {
-        // Broadcast frame to all connected browsers
+        // Cache configuration and keyframes for late-joining browsers
         const frameMsg = JSON.stringify(packet);
+        if (packet.type === 'configuration') {
+          session.lastConfig = frameMsg;
+        } else if (packet.type === 'data' && packet.keyframe) {
+          session.lastKeyframe = frameMsg;
+        }
+
+        // Broadcast frame to all connected browsers
         session.browsers.forEach(ws => {
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(frameMsg);
@@ -133,14 +155,17 @@ export class AndroidStreamer {
 
   handleWebSocket(ws: WebSocket, serial: string): void {
     if (!this.sessions.has(serial)) {
-      this.sessions.set(serial, { serial, browsers: new Set() });
+      this.sessions.set(serial, { serial, browsers: new Set(), deviceWidth: 1080, deviceHeight: 1920 });
     }
     const session = this.sessions.get(serial)!;
     session.browsers.add(ws);
 
     console.log(`[AndroidStreamer] Browser connected to ${serial} (${session.browsers.size} browsers)`);
 
-    // If metadata already available, send it immediately
+    // Replay cached stream state so late-joining browsers can decode immediately:
+    // 1. metadata (codec, dimensions)
+    // 2. configuration (SPS/PPS — required to initialize the H.264 decoder)
+    // 3. last keyframe (current screen content)
     if (session.metadata) {
       ws.send(JSON.stringify({
         type: 'metadata',
@@ -150,6 +175,12 @@ export class AndroidStreamer {
         height: session.metadata.height,
         fps: 60,
       }));
+      if (session.lastConfig) {
+        ws.send(session.lastConfig);
+      }
+      if (session.lastKeyframe) {
+        ws.send(session.lastKeyframe);
+      }
     }
 
     ws.on('close', () => {
