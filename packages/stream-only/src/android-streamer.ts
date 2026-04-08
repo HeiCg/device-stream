@@ -67,8 +67,10 @@ export class AndroidStreamer {
         const metaMsg = JSON.stringify({
           type: 'metadata',
           codec: metadata.codec,
+          codecName: 'h264',
           width: metadata.width,
           height: metadata.height,
+          fps: 60,
         });
         session.browsers.forEach(ws => {
           if (ws.readyState === WebSocket.OPEN) {
@@ -87,15 +89,20 @@ export class AndroidStreamer {
       },
     );
 
-    // Wait briefly for metadata to arrive from scrcpy
-    await new Promise<void>(resolve => {
-      const check = () => {
-        if (session.metadata) return resolve();
-        setTimeout(check, 50);
-      };
-      check();
-      // Timeout after 5 seconds
-      setTimeout(resolve, 5000);
+    // Wait for metadata to arrive from scrcpy
+    await new Promise<void>((resolve, reject) => {
+      if (session.metadata) return resolve();
+      const timer = setTimeout(() => {
+        clearInterval(interval);
+        reject(new Error(`Timed out waiting for scrcpy metadata for ${serial}`));
+      }, 5000);
+      const interval = setInterval(() => {
+        if (session.metadata) {
+          clearInterval(interval);
+          clearTimeout(timer);
+          resolve();
+        }
+      }, 50);
     });
 
     return {
@@ -138,8 +145,10 @@ export class AndroidStreamer {
       ws.send(JSON.stringify({
         type: 'metadata',
         codec: session.metadata.codec,
+        codecName: 'h264',
         width: session.metadata.width,
         height: session.metadata.height,
+        fps: 60,
       }));
     }
 

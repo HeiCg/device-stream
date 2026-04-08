@@ -10,6 +10,7 @@ export class StreamServer {
   private androidStreamer: AndroidStreamer;
   private simulatorStreamer: SimulatorStreamer;
   private streams = new Map<string, StreamInfo>();
+  private pendingClients = new Map<string, Set<WebSocket>>();
 
   constructor(options: StreamServerOptions = {}) {
     const port = options.port ?? 3456;
@@ -86,17 +87,38 @@ export class StreamServer {
     const streamInfo = this.streams.get(serial);
 
     if (!streamInfo) {
-      // Stream not started yet — hold the connection.
-      // Register with both streamers; the active one will broadcast frames.
-      this.androidStreamer.handleWebSocket(ws, serial);
-      this.simulatorStreamer.handleWebSocket(ws, serial);
+      // Stream not started yet — queue the connection until startStream() is called.
+      if (!this.pendingClients.has(serial)) {
+        this.pendingClients.set(serial, new Set());
+      }
+      this.pendingClients.get(serial)!.add(ws);
+
+      ws.on('close', () => {
+        this.pendingClients.get(serial)?.delete(ws);
+      });
       return;
     }
 
-    if (streamInfo.platform === 'android') {
+    this.routeWebSocket(ws, serial, streamInfo.platform);
+  }
+
+  private routeWebSocket(ws: WebSocket, serial: string, platform: 'android' | 'ios-simulator'): void {
+    if (platform === 'android') {
       this.androidStreamer.handleWebSocket(ws, serial);
     } else {
       this.simulatorStreamer.handleWebSocket(ws, serial);
+    }
+  }
+
+  private flushPendingClients(serial: string, platform: 'android' | 'ios-simulator'): void {
+    const pending = this.pendingClients.get(serial);
+    if (!pending) return;
+
+    this.pendingClients.delete(serial);
+    for (const ws of pending) {
+      if (ws.readyState === WebSocket.OPEN) {
+        this.routeWebSocket(ws, serial, platform);
+      }
     }
   }
 
@@ -134,6 +156,7 @@ export class StreamServer {
     }
 
     this.streams.set(serial, info);
+    this.flushPendingClients(serial, info.platform);
     console.log(`[StreamServer] Stream started: ${serial} (${info.platform}, ${info.codec})`);
     return info;
   }
@@ -142,14 +165,14 @@ export class StreamServer {
     const info = this.streams.get(serial);
     if (!info) return;
 
-    this.streams.delete(serial);
-
     if (info.platform === 'android') {
       await this.androidStreamer.stopStream(serial);
     } else {
       await this.simulatorStreamer.stopStream(serial);
     }
 
+    this.streams.delete(serial);
+    this.pendingClients.delete(serial);
     console.log(`[StreamServer] Stream stopped: ${serial}`);
   }
 
