@@ -8,7 +8,11 @@ import {
   VideoStreamMetadata,
   BaseDeviceService,
   DeviceMutexManager,
+  AccessibilityNode,
+  DeviceStateSnapshot,
+  PlatformCapability,
 } from '@device-stream/core';
+import { parseWdaSourceXml } from './wda-hierarchy-parser';
 import { goIOSClient } from './go-ios-client';
 import { webDriverAgentClient } from './wda-client';
 import { mjpegStreamClient } from './mjpeg-client';
@@ -386,6 +390,57 @@ export class IOSDeviceService extends BaseDeviceService {
     }
   }
 
+  async activateApp(serial: string, bundleId: string): Promise<void> {
+    this.assertConnected(serial);
+    await webDriverAgentClient.activateApp(serial, bundleId);
+  }
+
+  // ─── Phase 2: Accessibility Tree + Device State ───
+
+  async getAccessibilityTree(serial: string, _maxElements?: number): Promise<AccessibilityNode[]> {
+    const xml = await this.captureUIHierarchy(serial);
+    return parseWdaSourceXml(xml);
+  }
+
+  async getDeviceState(serial: string): Promise<DeviceStateSnapshot> {
+    this.assertConnected(serial);
+    const start = Date.now();
+
+    const [xml, appInfo, screenshotBuf] = await Promise.all([
+      this.captureUIHierarchy(serial),
+      webDriverAgentClient.getActiveAppInfo(serial).catch(() => ({ bundleId: 'unknown', name: 'unknown', pid: 0 })),
+      this.screenshot(serial).catch(() => null),
+    ]);
+
+    const tree = parseWdaSourceXml(xml);
+    const dims = this.screenDimensionsCache.get(serial);
+
+    return {
+      tree,
+      appInfo: {
+        currentApp: appInfo.name,
+        packageName: appInfo.bundleId,
+        keyboardVisible: false,
+      },
+      deviceContext: {
+        screenWidth: dims?.width ?? 1170,
+        screenHeight: dims?.height ?? 2532,
+      },
+      screenshot: screenshotBuf ? screenshotBuf.toString('base64') : undefined,
+      captureMs: Date.now() - start,
+    };
+  }
+
+  getCapabilities(): PlatformCapability[] {
+    return [
+      'accessibility',
+      'appManagement',
+      'deepLinks',
+    ];
+  }
+
+  // ─── Phase 3: App Management (wiring existing methods) ───
+
   async launchApp(serial: string, bundleId: string): Promise<void> {
     this.assertConnected(serial);
     await webDriverAgentClient.launchApp(serial, bundleId);
@@ -397,14 +452,15 @@ export class IOSDeviceService extends BaseDeviceService {
     await webDriverAgentClient.terminateApp(serial, bundleId);
   }
 
-  async activateApp(serial: string, bundleId: string): Promise<void> {
-    this.assertConnected(serial);
-    await webDriverAgentClient.activateApp(serial, bundleId);
-  }
+  // ─── Phase 4: Navigation ───
 
-  async longPress(serial: string, x: number, y: number, duration: number = 1000): Promise<void> {
+  async back(serial: string): Promise<void> {
     this.assertConnected(serial);
-    await webDriverAgentClient.longPress(serial, x, y, duration);
+    const dims = this.screenDimensionsCache.get(serial);
+    const width = dims?.width ?? 1170;
+    const height = dims?.height ?? 2532;
+    // iOS back: swipe from left edge to 40% width
+    await webDriverAgentClient.swipe(serial, 5, Math.floor(height / 2), Math.floor(width * 0.4), Math.floor(height / 2), 300);
   }
 
   /**

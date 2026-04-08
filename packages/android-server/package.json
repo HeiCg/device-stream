@@ -7,7 +7,9 @@
     "build": "bash scripts/build.sh",
     "setup": "bash scripts/setup.sh",
     "start": "bash scripts/start.sh",
-    "clean": "cd ../../native-servers/android-device-server && ./gradlew clean"
+    "clean": "cd ../../native-servers/android-device-server && ./gradlew clean",
+    "lint": "echo 'No TypeScript sources to lint'",
+    "test": "echo 'No tests configured'"
   },
   "keywords": [
     "device-stream",

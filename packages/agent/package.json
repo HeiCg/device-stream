@@ -1,0 +1,44 @@
+{
+  "name": "@device-stream/agent",
+  "version": "1.1.0",
+  "description": "LLM agent intelligence layer — navigation graphs, skeleton fingerprinting, compact state for AI-driven device control",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HeiCg/device-stream.git",
+    "directory": "packages/agent"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "device-stream",
+    "agent",
+    "navigation-graph",
+    "accessibility",
+    "llm",
+    "ai-agent",
+    "mobile-automation"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@device-stream/core": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
