@@ -3,7 +3,17 @@
  * See: https://tangoadb.dev/
  */
 
-import { Device, VideoStreamMetadata, BaseDeviceService } from '@device-stream/core';
+import {
+  Device,
+  VideoStreamMetadata,
+  BaseDeviceService,
+  AccessibilityNode,
+  DeviceStateSnapshot,
+  PlatformCapability,
+  AppInfo,
+  AppearanceMode,
+} from '@device-stream/core';
+import { parseUiAutomatorXml } from './hierarchy-parser';
 import { Adb, AdbServerClient } from '@yume-chan/adb';
 import { AdbServerNodeTcpConnector } from '@yume-chan/adb-server-node-tcp';
 
@@ -357,44 +367,10 @@ export class AndroidDeviceService extends BaseDeviceService {
     }
   }
 
-  async launchApp(serial: string, packageId: string): Promise<void> {
-    this.assertConnected(serial);
-    try {
-      const adb = await this.getAdbDevice(serial);
-
-      await this.runShellCommand(adb, `monkey -p ${packageId} -c android.intent.category.LAUNCHER 1`);
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      console.log(`Launched app ${packageId} on Android device ${serial}`);
-    } catch (error) {
-      console.error(`Failed to launch app ${packageId} on ${serial}:`, error);
-      throw new Error(`Failed to launch app: ${error}`);
-    }
-  }
-
   async forceStopApp(serial: string, packageId: string): Promise<void> {
     this.assertConnected(serial);
-    try {
-      const adb = await this.getAdbDevice(serial);
-      await this.runShellCommand(adb, `am force-stop ${packageId}`);
-      console.log(`Force stopped app ${packageId} on Android device ${serial}`);
-    } catch (error) {
-      console.error(`Failed to force stop app ${packageId} on ${serial}:`, error);
-      throw new Error(`Failed to force stop app: ${error}`);
-    }
-  }
-
-  async clearAppData(serial: string, packageId: string): Promise<void> {
-    this.assertConnected(serial);
-    try {
-      const adb = await this.getAdbDevice(serial);
-      await this.runShellCommand(adb, `pm clear ${packageId}`);
-      console.log(`Cleared app data for ${packageId} on Android device ${serial}`);
-    } catch (error) {
-      console.error(`Failed to clear app data for ${packageId} on ${serial}:`, error);
-      throw new Error(`Failed to clear app data: ${error}`);
-    }
+    const adb = await this.getAdbDevice(serial);
+    await this.runShellCommand(adb, `am force-stop ${packageId}`);
   }
 
   async swipe(
@@ -416,16 +392,172 @@ export class AndroidDeviceService extends BaseDeviceService {
     }
   }
 
+  // ─── Phase 2: Accessibility Tree + Device State ───
+
+  async getAccessibilityTree(serial: string, _maxElements?: number): Promise<AccessibilityNode[]> {
+    const xml = await this.captureUIHierarchy(serial);
+    return parseUiAutomatorXml(xml);
+  }
+
+  async getDeviceState(serial: string): Promise<DeviceStateSnapshot> {
+    this.assertConnected(serial);
+    const start = Date.now();
+
+    const [xml, currentApp, screenshotBuf] = await Promise.all([
+      this.captureUIHierarchy(serial),
+      this.getCurrentApp(serial),
+      this.screenshot(serial).catch(() => null),
+    ]);
+
+    const tree = parseUiAutomatorXml(xml);
+    const device = this.deviceInfoCache.get(serial);
+
+    return {
+      tree,
+      appInfo: {
+        currentApp,
+        packageName: currentApp,
+        keyboardVisible: false,
+      },
+      deviceContext: {
+        screenWidth: device?.screenWidth ?? 1080,
+        screenHeight: device?.screenHeight ?? 1920,
+      },
+      screenshot: screenshotBuf ? screenshotBuf.toString('base64') : undefined,
+      captureMs: Date.now() - start,
+    };
+  }
+
+  getCapabilities(): PlatformCapability[] {
+    return [
+      'accessibility',
+      'appManagement',
+      'deepLinks',
+      'appearance',
+      'permissions',
+      'clipboard',
+      'recording',
+      'media',
+      'logStream',
+    ];
+  }
+
+  // ─── Phase 3: App Management (wiring existing methods) ───
+
+  async launchApp(serial: string, appId: string): Promise<void> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    await this.runShellCommand(adb, `monkey -p ${appId} -c android.intent.category.LAUNCHER 1`);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+
+  async terminateApp(serial: string, appId: string): Promise<void> {
+    await this.forceStopApp(serial, appId);
+  }
+
+  async installApp(serial: string, path: string): Promise<void> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    const result = await this.runShellCommand(adb, `pm install -r "${path}"`);
+    if (result.includes('Failure')) {
+      throw new Error(`Failed to install app: ${result.trim()}`);
+    }
+  }
+
+  async uninstallApp(serial: string, appId: string): Promise<void> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    await this.runShellCommand(adb, `pm uninstall ${appId}`);
+  }
+
+  async listInstalledApps(serial: string): Promise<AppInfo[]> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    const output = await this.runShellCommand(adb, 'pm list packages -3');
+    const packages = output
+      .split('\n')
+      .filter((line: string) => line.startsWith('package:'))
+      .map((line: string) => line.replace('package:', '').trim())
+      .filter(Boolean);
+
+    return packages.map((pkg: string) => ({
+      bundleId: pkg,
+      name: pkg,
+      type: 'user' as const,
+    }));
+  }
+
+  async clearAppData(serial: string, appId: string): Promise<void> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    await this.runShellCommand(adb, `pm clear ${appId}`);
+  }
+
+  // ─── Phase 4: Device Control ───
+
+  async openDeepLink(serial: string, url: string): Promise<void> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    await this.runShellCommand(adb, `am start -a android.intent.action.VIEW -d '${url}'`);
+  }
+
+  async back(serial: string): Promise<void> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    await this.runShellCommand(adb, 'input keyevent KEYCODE_BACK');
+  }
+
   async longPress(serial: string, x: number, y: number, duration: number = 1000): Promise<void> {
     this.assertConnected(serial);
-    try {
-      const adb = await this.getAdbDevice(serial);
-      await this.runShellCommand(adb, `input swipe ${x} ${y} ${x} ${y} ${duration}`);
-      console.log(`Long pressed at (${x}, ${y}) on Android device ${serial}`);
-    } catch (error) {
-      console.error(`Failed to long press on Android device ${serial}:`, error);
-      throw new Error(`Failed to long press: ${error}`);
-    }
+    const adb = await this.getAdbDevice(serial);
+    await this.runShellCommand(adb, `input swipe ${x} ${y} ${x} ${y} ${duration}`);
+  }
+
+  async setAppearance(serial: string, mode: AppearanceMode): Promise<void> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    await this.runShellCommand(adb, `cmd uimode night ${mode === 'dark' ? 'yes' : 'no'}`);
+  }
+
+  async getAppearance(serial: string): Promise<AppearanceMode> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    const output = await this.runShellCommand(adb, 'cmd uimode night');
+    return output.includes('yes') ? 'dark' : 'light';
+  }
+
+  async grantPermission(serial: string, appId: string, permission: string): Promise<void> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    await this.runShellCommand(adb, `pm grant ${appId} ${permission}`);
+  }
+
+  async revokePermission(serial: string, appId: string, permission: string): Promise<void> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    await this.runShellCommand(adb, `pm revoke ${appId} ${permission}`);
+  }
+
+  // ─── Phase 5: I/O ───
+
+  async getClipboard(serial: string): Promise<string> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    const output = await this.runShellCommand(adb, 'cmd clipboard get-text');
+    return output.trim();
+  }
+
+  async setClipboard(serial: string, text: string): Promise<void> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    const escaped = text.replace(/'/g, "'\\''");
+    await this.runShellCommand(adb, `cmd clipboard set-text '${escaped}'`);
+  }
+
+  async addMedia(serial: string, path: string): Promise<void> {
+    this.assertConnected(serial);
+    const adb = await this.getAdbDevice(serial);
+    await this.runShellCommand(adb, `am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file://${path}`);
   }
 
   async listPackages(serial: string): Promise<string[]> {

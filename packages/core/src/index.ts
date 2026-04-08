@@ -22,6 +22,13 @@ export {
   DeviceFarmStats,
   QueuedTask,
   DeviceFarmEvent,
+  PlatformCapability,
+  AccessibilityNode,
+  DeviceStateSnapshot,
+  AppInfo,
+  LogLevel,
+  LogEntry,
+  AppearanceMode,
 } from './types';
 
 // Interfaces
