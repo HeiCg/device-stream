@@ -7,12 +7,13 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @device-stream/core && npm run build -w @device-stream/ios-simulator -w @device-stream/ios-device -w @device-stream/android",
+    "build": "npm run build -w @device-stream/core && npm run build -w @device-stream/ios-simulator -w @device-stream/ios-device -w @device-stream/android && npm run build -w @device-stream/stream-only",
     "build:core": "npm run build -w @device-stream/core",
     "build:ios-simulator": "npm run build -w @device-stream/ios-simulator",
     "build:ios-device": "npm run build -w @device-stream/ios-device",
     "build:android": "npm run build -w @device-stream/android",
     "build:android-server": "npm run build -w @device-stream/android-server",
+    "build:stream-only": "npm run build -w @device-stream/stream-only",
     "build:sim-capture": "bash scripts/build-mirrorkit.sh",
     "build:mirrorkit": "npm run build:sim-capture",
     "clean": "npm run clean --workspaces",
